@@ -28,7 +28,7 @@
 | 无 Anthropic API key | AI 调用通过 Claude Code Max 订阅完成 |
 | 5–15 分钟级 AI 处理延迟可接受 | 不追求秒级实时 |
 | 翻墙网络专线 | 网络稳定性远高于消费级 VPN，但仍需保留容错 |
-| 时间窗口分场景 | 场景 1：3–6 个月；场景 2：1 周；场景 3：2 天 |
+| 时间窗口分场景 | 场景 1：3–6 个月；场景 2：1 周；场景 3：2 天。在 ai-worker 路由判定时作为「场景资格过滤」应用，超窗口的帖子不进入对应场景的草稿生成（scanner 不做窗口过滤，全量入候选池）|
 
 ## 3. 设计原则
 
@@ -66,7 +66,9 @@
 discovered（捞到，scanner 写入）
     ↓
 analyzing（AI 处理中）
-    ├── matched_article  →  drafting  →  pending_review
+    ├── scenario_1: matched_article    ┐
+    ├── scenario_2: kb_synthesis       ├──→ drafting → pending_review
+    ├── scenario_3: prospect_engage    ┘
     │                                          ↓ 用户审核
     │                                     approved | rejected
     │                                          ↓ approved
@@ -78,7 +80,11 @@ analyzing（AI 处理中）
     │                                          ↓ 7d 后
     │                                     archived
     ├── no_match  →  archived（KB 无相关 → 触发 needs_kb_input 标记）
+    ├── prospect_skip → archived（场景 3 中「不相关也不私人化」直接归档）
+    ├── prospect_remind → archived（场景 3 中「不相关但私人化」仅通知用户，不进草稿队列）
     └── failed   →  dead_letter（AI 处理失败，等用户手动处理）
+
+三个场景从 `analyzing` 出来后走相同的下游状态机（drafting → pending_review → ... → archived），仅入口路由不同。
 ```
 
 ## 5. 架构总览
@@ -156,7 +162,7 @@ analyzing（AI 处理中）
      - LLM 分析帖子类型/观点/场景路由
      - 若 KB 命中 → LLM 生成草稿（带 citations）
      - 若 KB 无命中 → 标记 `needs_kb_input`
-     - 失败 → 写 `dead_letter`，retry_count++
+     - 失败 → retry_count++；连续失败 3 次后写 `dead_letter`
   3. 更新心跳，退出
 - **节流**：单次最多 20 条；队列堆积超 200 告警
 - **修补点**：批大小、prompt 模板（`prompts/*.ts`）、场景路由规则（`rules/scenario-routing.ts`）
@@ -256,8 +262,8 @@ analyzing（AI 处理中）
 | `customers` | 潜客名单（外部同步）| id, x_handle, tags[], stage, source_system_id |
 | `articles` | Dify 文章索引（轻引用，不存全文）| id, dify_doc_id, title, url, lang, published_at |
 | `article_keywords` | 文章专属关键词 | article_id, term, ai_extracted, approved |
-| `posts` | 候选帖子 | id, tweet_id, author_handle, text, posted_at, lang, source, scenario_hint, status, trace_id |
-| `post_analysis` | AI 分析结果 | post_id, type, viewpoint, scenario, kb_match_score, kb_chunks[], analyzed_at, prompt_version, playbook_candidates[] |
+| `posts` | 候选帖子 | id, tweet_id, author_handle, text, posted_at, lang, source, scenario_hint（scanner 写入的初步线索：来自潜客名单 / 命中关键词等）, status, trace_id |
+| `post_analysis` | AI 分析结果 | post_id, type, viewpoint, scenario（ai-worker 最终确定的场景路由：1/2/3/skip）, kb_match_score, kb_chunks[], analyzed_at, prompt_version, playbook_candidates[] |
 | `drafts` | 回复草稿 | id, post_id, account_id, content, format, citations[], strategy, status, idempotency_key, playbook_id |
 | `scheduled` | 已审核排程 | draft_id, target_send_at, priority, account_id |
 | `sent` | 已发送记录 | id, draft_id, tweet_id, sent_at, account_id |
