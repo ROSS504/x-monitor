@@ -26,6 +26,9 @@ importers:
       '@x-monitor/queue':
         specifier: workspace:^
         version: link:packages/queue
+      '@x-monitor/x-client':
+        specifier: workspace:^
+        version: link:packages/x-client
     devDependencies:
       '@types/node':
         specifier: 20.12.7

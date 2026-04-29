@@ -3,6 +3,8 @@ import { db } from '@/lib/server'
 import { healthRepo } from '@x-monitor/db'
 import { aiTasksQ, sendTasksQ, getNetStatus } from '@x-monitor/queue'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
   const processes = healthRepo(db).all()
   const [aiWaiting, sendWaiting, netStatus] = await Promise.all([

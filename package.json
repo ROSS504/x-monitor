@@ -12,7 +12,8 @@
     "seed": "tsx scripts/seed.ts",
     "inspect": "tsx scripts/inspect.ts",
     "ai-routine": "tsx scripts/ai-routine.ts",
-    "kb-publish": "tsx scripts/kb-publish.ts"
+    "kb-publish": "tsx scripts/kb-publish.ts",
+    "scrape-once": "tsx scripts/scrape-once.ts"
   },
   "devDependencies": {
     "@types/node": "20.12.7",
@@ -27,6 +28,7 @@
     "@x-monitor/db": "workspace:^",
     "@x-monitor/dify-client": "workspace:^",
     "@x-monitor/observability": "workspace:^",
-    "@x-monitor/queue": "workspace:^"
+    "@x-monitor/queue": "workspace:^",
+    "@x-monitor/x-client": "workspace:^"
   }
 }

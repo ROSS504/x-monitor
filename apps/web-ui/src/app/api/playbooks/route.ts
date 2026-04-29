@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/server'
 import { playbooksRepo } from '@x-monitor/db'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(req: Request) {
   const ct = req.headers.get('content-type') ?? ''
   let name = '', keywords = '', strategyText = ''
