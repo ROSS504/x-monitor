@@ -9,7 +9,8 @@
     "lint": "pnpm -r lint",
     "dev": "pm2 start ecosystem.config.cjs",
     "stop": "pm2 stop ecosystem.config.cjs",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "inspect": "tsx scripts/inspect.ts"
   },
   "devDependencies": {
     "@types/node": "20.12.7",
