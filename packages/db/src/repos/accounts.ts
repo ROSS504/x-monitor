@@ -1,6 +1,16 @@
 import type Database from 'better-sqlite3'
 import type { Account } from '@x-monitor/core'
 
+export interface InsertAccountInput {
+  handle: string
+  role: 'official' | 'personal' | 'founder'
+  cookiesPath: string
+  dailyLimit: number
+  minIntervalMin: number
+  businessHours: { startHour: number; endHour: number; tz: string }
+  cooldownUntil: number | null
+}
+
 function rowToAccount(r: any): Account {
   return {
     id: r.id,
@@ -16,6 +26,18 @@ function rowToAccount(r: any): Account {
 
 export function accountsRepo(db: Database.Database) {
   return {
+    insert(a: InsertAccountInput): number {
+      const stmt = db.prepare(`
+        INSERT INTO accounts (handle, role, cookies_path, daily_limit, min_interval_min, business_hours_json, cooldown_until)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `)
+      const info = stmt.run(
+        a.handle, a.role, a.cookiesPath, a.dailyLimit, a.minIntervalMin,
+        JSON.stringify(a.businessHours), a.cooldownUntil,
+      )
+      return Number(info.lastInsertRowid)
+    },
+
     findByHandle(handle: string): Account | null {
       const r = db.prepare(`SELECT * FROM accounts WHERE handle = ?`).get(handle) as any
       if (!r) return null

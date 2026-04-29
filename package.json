@@ -8,12 +8,17 @@
     "test": "pnpm -r --filter='./packages/*' --filter='./apps/*' test",
     "lint": "pnpm -r lint",
     "dev": "pm2 start ecosystem.config.cjs",
-    "stop": "pm2 stop ecosystem.config.cjs"
+    "stop": "pm2 stop ecosystem.config.cjs",
+    "seed": "tsx scripts/seed.ts"
   },
   "devDependencies": {
+    "@types/node": "20.12.7",
+    "tsx": "^4.21.0",
     "typescript": "5.4.5",
-    "vitest": "1.6.0",
-    "@types/node": "20.12.7"
+    "vitest": "1.6.0"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "dependencies": {
+    "@x-monitor/db": "workspace:^"
+  }
 }
