@@ -150,3 +150,17 @@ CREATE TABLE IF NOT EXISTS reply_playbooks (
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_playbooks_enabled ON reply_playbooks(enabled);
+
+CREATE TABLE IF NOT EXISTS kb_documents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  dify_doc_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  word_count INTEGER NOT NULL DEFAULT 0,
+  hit_count INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  indexing_status TEXT,
+  data_source_type TEXT,
+  dify_created_at INTEGER NOT NULL,
+  last_synced_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_kb_docs_status ON kb_documents(indexing_status);

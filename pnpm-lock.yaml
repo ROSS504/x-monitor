@@ -14,6 +14,9 @@ importers:
       '@x-monitor/db':
         specifier: workspace:^
         version: link:packages/db
+      '@x-monitor/dify-client':
+        specifier: workspace:^
+        version: link:packages/dify-client
       '@x-monitor/observability':
         specifier: workspace:^
         version: link:packages/observability
@@ -119,6 +122,28 @@ importers:
       '@x-monitor/x-client':
         specifier: workspace:^
         version: link:../../packages/x-client
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.9.0
+        version: 12.9.0
+
+  apps/fresh-kb-indexer:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@x-monitor/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@x-monitor/dify-client':
+        specifier: workspace:^
+        version: link:../../packages/dify-client
+      '@x-monitor/observability':
+        specifier: workspace:^
+        version: link:../../packages/observability
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.13

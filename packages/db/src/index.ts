@@ -18,3 +18,4 @@ export {
   type ReplyPlaybook,
   type InsertPlaybookInput,
 } from './repos/playbooks.js'
+export { kbDocsRepo, type KbDocumentRow, type UpsertKbDocInput } from './repos/kbDocs.js'

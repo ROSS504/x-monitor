@@ -11,7 +11,8 @@
     "stop": "pm2 stop ecosystem.config.cjs",
     "seed": "tsx scripts/seed.ts",
     "inspect": "tsx scripts/inspect.ts",
-    "ai-routine": "tsx scripts/ai-routine.ts"
+    "ai-routine": "tsx scripts/ai-routine.ts",
+    "kb-publish": "tsx scripts/kb-publish.ts"
   },
   "devDependencies": {
     "@types/node": "20.12.7",
@@ -23,6 +24,7 @@
   "dependencies": {
     "@x-monitor/app-ai-worker": "workspace:^",
     "@x-monitor/db": "workspace:^",
+    "@x-monitor/dify-client": "workspace:^",
     "@x-monitor/observability": "workspace:^",
     "@x-monitor/queue": "workspace:^"
   }

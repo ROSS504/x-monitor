@@ -107,6 +107,15 @@ module.exports = {
       ...COMMON,
     },
     {
+      name: 'fresh-kb-indexer',
+      script: 'apps/fresh-kb-indexer/dist/index.js',
+      max_memory_restart: '200M',
+      restart_delay: 60000,  // hourly task; failed runs back off slow
+      out_file: '.pm2/logs/fresh-kb-indexer.out.log',
+      error_file: '.pm2/logs/fresh-kb-indexer.err.log',
+      ...COMMON,
+    },
+    {
       name: 'web-ui',
       cwd: `${REPO}/apps/web-ui`,
       script: 'node_modules/next/dist/bin/next',

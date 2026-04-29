@@ -24,6 +24,7 @@ describe('migrate', () => {
     expect(names).toContain('post_analytics')
     expect(names).toContain('dms')
     expect(names).toContain('reply_playbooks')
+    expect(names).toContain('kb_documents')
   })
 
   it('is idempotent', () => {
