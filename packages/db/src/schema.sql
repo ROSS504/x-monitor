@@ -99,3 +99,14 @@ CREATE TABLE IF NOT EXISTS system_health (
   status TEXT NOT NULL,
   last_error TEXT
 );
+
+CREATE TABLE IF NOT EXISTS customer_accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  handle TEXT NOT NULL UNIQUE,
+  display_name TEXT,
+  added_at INTEGER NOT NULL,
+  source TEXT NOT NULL DEFAULT 'manual',
+  notes TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS idx_customer_enabled ON customer_accounts(enabled);

@@ -20,6 +20,7 @@ describe('migrate', () => {
     expect(names).toContain('dead_letter')
     expect(names).toContain('system_health')
     expect(names).toContain('post_analysis')
+    expect(names).toContain('customer_accounts')
   })
 
   it('is idempotent', () => {

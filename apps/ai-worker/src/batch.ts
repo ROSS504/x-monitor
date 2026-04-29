@@ -67,10 +67,14 @@ export async function processBatch(
       strategy = 'kb-synthesis'
       promptVersion = sr.promptVersion
     } else {
-      // scenario === '3' — handled by a future scenario-3-specific worker; for now skip
-      postsRepo(db).updateStatus(post.id, 'no_match')
-      log.info('scenario 3 not yet handled', { postId: post.id, traceId: post.traceId })
-      return
+      // scenario === '3' — customer engagement: synthesize a friendly engagement reply from KB
+      const sr = await synthesizeOne(
+        { text: post.text, authorHandle: post.authorHandle, viewpoint: analysis.viewpoint },
+        { runPrompt: deps.runPrompt },
+      )
+      draftPayload = sr.draft
+      strategy = 'customer-engagement'
+      promptVersion = sr.promptVersion
     }
 
     if (!draftPayload) {

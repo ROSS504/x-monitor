@@ -35,6 +35,15 @@ module.exports = {
       ...COMMON,
     },
     {
+      name: 'scanner-customer',
+      script: 'apps/scanner-customer/dist/index.js',
+      max_memory_restart: '500M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/scanner-customer.out.log',
+      error_file: '.pm2/logs/scanner-customer.err.log',
+      ...COMMON,
+    },
+    {
       name: 'ai-worker',
       script: 'apps/ai-worker/dist/index.js',
       max_memory_restart: '500M',
