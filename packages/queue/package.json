@@ -1,0 +1,16 @@
+{
+  "name": "@x-monitor/queue",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@x-monitor/core": "workspace:^",
+    "bullmq": "^5.76.3",
+    "ioredis": "^5.10.1"
+  }
+}
