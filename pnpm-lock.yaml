@@ -37,6 +37,22 @@ importers:
         specifier: ^7.6.13
         version: 7.6.13
 
+  packages/observability:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../core
+      '@x-monitor/db':
+        specifier: workspace:^
+        version: link:../db
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.9.0
+        version: 12.9.0
+
   packages/queue:
     dependencies:
       '@x-monitor/core':
