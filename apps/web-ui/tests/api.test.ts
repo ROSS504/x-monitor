@@ -12,6 +12,9 @@ const ROUTES = [
   'src/app/api/pending/[id]/reject/route.ts',
   'src/app/api/status/route.ts',
   'src/app/api/test/inject-post/route.ts',
+  'src/app/api/playbooks/route.ts',
+  'src/app/api/playbooks/[id]/toggle/route.ts',
+  'src/app/api/playbooks/[id]/delete/route.ts',
 ]
 
 describe('api routes exist', () => {

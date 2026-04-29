@@ -20,6 +20,25 @@ describe('buildSynthesizeReplyPrompt', () => {
   })
 })
 
+describe('buildSynthesizeReplyPrompt with playbooks', () => {
+  it('appends playbook hints when provided', () => {
+    const p = buildSynthesizeReplyPrompt({
+      post: { text: 'Staking taxes', authorHandle: 'a', viewpoint: 'asks' },
+      chunks: [{ id: 'c1', text: 't', articleTitle: 'T', articleUrl: 'https://x' }],
+      playbooks: [{ name: 'Tax season', strategyText: 'Mention deadline urgency' }],
+    })
+    expect(p).toContain('Tax season: Mention deadline urgency')
+    expect(p).toContain('playbook hints')
+  })
+  it('omits the playbook section when empty', () => {
+    const p = buildSynthesizeReplyPrompt({
+      post: { text: 't', authorHandle: 'a', viewpoint: 'v' },
+      chunks: [{ id: 'c1', text: 't', articleTitle: 'T', articleUrl: 'https://x' }],
+    })
+    expect(p).not.toContain('playbook hints')
+  })
+})
+
 describe('parseSynthesizeReplyResponse', () => {
   it('extracts content + citations', () => {
     const raw = '```json\n{"content":"Tax timing is tough.","citations":[{"chunkId":"staking-1","quote":"FMV"}]}\n```'

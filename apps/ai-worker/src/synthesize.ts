@@ -10,6 +10,7 @@ import type { SearchKBFn } from '@x-monitor/dify-client'
 export interface SynthesizeDeps {
   runPrompt: typeof RunPrompt
   searchKB: SearchKBFn
+  playbooks?: { name: string; strategyText: string }[]
 }
 export interface SynthesizeResult {
   draft: { content: string; citations: { chunkId: string; quote: string }[] } | null
@@ -43,7 +44,7 @@ export async function synthesizeOne(
   )
   const totalScore = top.reduce((s, r) => s + r.score, 0)
 
-  const prompt = buildSynthesizeReplyPrompt({ post, chunks })
+  const prompt = buildSynthesizeReplyPrompt({ post, chunks, playbooks: deps.playbooks })
   const r = await deps.runPrompt({ prompt, timeoutMs: 90_000 })
   const parsed = parseSynthesizeReplyResponse(r.text)
   return {

@@ -27,4 +27,25 @@ describe('synthesizeOne', () => {
     expect(r.draft?.content).toContain('Synthesized')
     expect(fakeRun).toHaveBeenCalledOnce()
   })
+
+  it('passes playbook hints into the prompt when provided', async () => {
+    let capturedPrompt = ''
+    const fakeRun = vi.fn(async ({ prompt }: { prompt: string }) => {
+      capturedPrompt = prompt
+      return {
+        text: '{"content":"x","citations":[{"chunkId":"staking-1","quote":"FMV"}]}',
+        durationMs: 50,
+      }
+    })
+    await synthesizeOne(
+      { text: 'How are crypto staking rewards taxed?', authorHandle: 'a', viewpoint: 'asks about staking' },
+      {
+        runPrompt: fakeRun,
+        searchKB,
+        playbooks: [{ name: 'Tax-season urgency', strategyText: 'Lean into deadline pressure.' }],
+      },
+    )
+    expect(capturedPrompt).toContain('Tax-season urgency')
+    expect(capturedPrompt).toContain('deadline pressure')
+  })
 })

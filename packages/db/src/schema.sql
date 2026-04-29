@@ -139,3 +139,14 @@ CREATE TABLE IF NOT EXISTS dms (
 CREATE INDEX IF NOT EXISTS idx_dms_account ON dms(account_id);
 CREATE INDEX IF NOT EXISTS idx_dms_sender ON dms(sender_handle);
 CREATE INDEX IF NOT EXISTS idx_dms_attributed ON dms(attributed_sent_id);
+
+CREATE TABLE IF NOT EXISTS reply_playbooks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  keywords TEXT NOT NULL,
+  strategy_text TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_playbooks_enabled ON reply_playbooks(enabled);

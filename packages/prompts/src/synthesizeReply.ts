@@ -1,6 +1,7 @@
 export interface SynthesizeReplyInput {
   post: { text: string; authorHandle: string; viewpoint: string }
   chunks: { id: string; text: string; articleTitle: string; articleUrl: string }[]
+  playbooks?: { name: string; strategyText: string }[]
 }
 
 export interface SynthesizeReplyResult {
@@ -12,6 +13,9 @@ export const PROMPT_VERSION = 'synthesize-reply@v1'
 
 export function buildSynthesizeReplyPrompt(p: SynthesizeReplyInput): string {
   const chunkBlock = p.chunks.map(c => `[${c.id}] (from "${c.articleTitle}" — ${c.articleUrl})\n${c.text}`).join('\n\n')
+  const playbookBlock = (p.playbooks ?? []).length > 0
+    ? `\n\nOperator playbook hints (apply tone/angle if relevant; cite passages, not playbooks):\n${(p.playbooks ?? []).map(pb => `- ${pb.name}: ${pb.strategyText}`).join('\n')}`
+    : ''
   return `You are a content operator at FinTax (crypto tax SaaS).
 
 The following X post is a discussion or opinion — there's no single article that directly answers it, but multiple knowledge-base passages give relevant context.
@@ -24,7 +28,7 @@ ${p.post.text}
 Identified core viewpoint: ${p.post.viewpoint}
 
 Relevant knowledge-base passages (each tagged with chunk_id):
-${chunkBlock}
+${chunkBlock}${playbookBlock}
 
 Write a single English X reply that:
 - Engages with the post's specific point (not generic platitudes)

@@ -28,6 +28,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <a href="/sent">已发送</a>
           <a href="/dms">私信</a>
           <a href="/customers">潜客</a>
+          <a href="/playbooks">策略</a>
           <a href="/status">系统状态</a>
         </nav>
         {children}

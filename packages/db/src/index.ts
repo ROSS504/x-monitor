@@ -11,3 +11,10 @@ export { deadLetterRepo } from './repos/deadLetter.js'
 export { customersRepo, type CustomerAccount, type InsertCustomerInput } from './repos/customers.js'
 export { analyticsRepo, type AnalyticsBucket, type PostAnalyticsRow, type InsertAnalyticsInput } from './repos/analytics.js'
 export { dmsRepo, type DmRow, type InsertDmInput } from './repos/dms.js'
+export {
+  playbooksRepo,
+  scorePlaybook,
+  pickRelevantPlaybooks,
+  type ReplyPlaybook,
+  type InsertPlaybookInput,
+} from './repos/playbooks.js'

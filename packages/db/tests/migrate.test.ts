@@ -23,6 +23,7 @@ describe('migrate', () => {
     expect(names).toContain('customer_accounts')
     expect(names).toContain('post_analytics')
     expect(names).toContain('dms')
+    expect(names).toContain('reply_playbooks')
   })
 
   it('is idempotent', () => {

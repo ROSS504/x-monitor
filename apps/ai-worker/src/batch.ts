@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 import { Worker, type Job } from 'bullmq'
 import { connection, type AiTaskPayload } from '@x-monitor/queue'
-import { postsRepo, draftsRepo, accountsRepo, deadLetterRepo } from '@x-monitor/db'
+import { postsRepo, draftsRepo, accountsRepo, deadLetterRepo, playbooksRepo, pickRelevantPlaybooks } from '@x-monitor/db'
 import { runPrompt } from '@x-monitor/claude-client'
 import { analyzeOne, type AnalyzeDeps } from './analyze.js'
 import { draftOne, type DraftDeps } from './draft.js'
@@ -61,22 +61,17 @@ export async function processBatch(
       strategy = 'article-match'
       articleId = dr.articleId
       promptVersion = dr.promptVersion
-    } else if (analysis.scenario === '2') {
-      const sr = await synthesizeOne(
-        { text: post.text, authorHandle: post.authorHandle, viewpoint: analysis.viewpoint },
-        { runPrompt: deps.runPrompt, searchKB: deps.searchKB },
-      )
-      draftPayload = sr.draft
-      strategy = 'kb-synthesis'
-      promptVersion = sr.promptVersion
     } else {
-      // scenario === '3' — customer engagement: synthesize a friendly engagement reply from KB
+      // scenario 2 or 3 — synthesize via KB; attach relevant operator playbooks
+      const allPlaybooks = playbooksRepo(db).listEnabled()
+      const relevant = pickRelevantPlaybooks(allPlaybooks, post.text, 3)
+        .map(p => ({ name: p.name, strategyText: p.strategyText }))
       const sr = await synthesizeOne(
         { text: post.text, authorHandle: post.authorHandle, viewpoint: analysis.viewpoint },
-        { runPrompt: deps.runPrompt, searchKB: deps.searchKB },
+        { runPrompt: deps.runPrompt, searchKB: deps.searchKB, playbooks: relevant },
       )
       draftPayload = sr.draft
-      strategy = 'customer-engagement'
+      strategy = analysis.scenario === '2' ? 'kb-synthesis' : 'customer-engagement'
       promptVersion = sr.promptVersion
     }
 
