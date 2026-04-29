@@ -46,5 +46,23 @@ export function sentRepo(db: Database.Database) {
       if (!r) return null
       return rowToSent(r)
     },
+
+    findLastForAccount(accountId: number): SentRow | null {
+      const r = db.prepare(`
+        SELECT * FROM sent WHERE account_id = ? ORDER BY sent_at DESC LIMIT 1
+      `).get(accountId) as any
+      if (!r) return null
+      return rowToSent(r)
+    },
+
+    countTodayForAccount(accountId: number, now: number): number {
+      const dayStart = new Date(now)
+      dayStart.setUTCHours(0, 0, 0, 0)
+      const startMs = dayStart.getTime()
+      const r = db.prepare(`
+        SELECT COUNT(*) AS c FROM sent WHERE account_id = ? AND sent_at >= ?
+      `).get(accountId, startMs) as { c: number }
+      return r.c
+    },
   }
 }

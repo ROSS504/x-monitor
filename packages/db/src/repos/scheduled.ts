@@ -45,6 +45,12 @@ export function scheduledRepo(db: Database.Database) {
       return rows.map(rowToScheduled)
     },
 
+    findByDraftId(draftId: number): ScheduledRow | null {
+      const r = db.prepare(`SELECT * FROM scheduled WHERE draft_id = ?`).get(draftId) as any
+      if (!r) return null
+      return rowToScheduled(r)
+    },
+
     nextForAccount(accountId: number, now: number): ScheduledRow | null {
       const r = db.prepare(`
         SELECT * FROM scheduled
