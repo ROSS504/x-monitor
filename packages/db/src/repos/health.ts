@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3'
 
-export type HealthStatus = 'healthy' | 'degraded' | 'down'
+export type HealthStatus = 'ok' | 'error'
 
 export interface HealthRow {
   processName: string
