@@ -1,8 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest'
 import Database from 'better-sqlite3'
 import { migrate, accountsRepo, postsRepo, draftsRepo, sentRepo } from '@x-monitor/db'
 import { createDryRunClient } from '@x-monitor/x-client'
+import { analyticsTasksQ, connection } from '@x-monitor/queue'
 import { sendOne } from '../src/post.js'
+
+afterAll(async () => { await connection.quit() })
 
 describe('sendOne', () => {
   let db: Database.Database
@@ -26,7 +29,10 @@ describe('sendOne', () => {
     })
     xc = createDryRunClient()
   })
-  afterEach(() => { db.close() })
+  afterEach(async () => {
+    await analyticsTasksQ.obliterate({ force: true }).catch(() => {})
+    db.close()
+  })
 
   it('posts and writes sent row', async () => {
     const r = await sendOne(db, xc, 1)

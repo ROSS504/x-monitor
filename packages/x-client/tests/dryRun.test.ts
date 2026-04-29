@@ -17,4 +17,12 @@ describe('DryRunXClient', () => {
     const r = await c.search('staking', 0)
     expect(r).toHaveLength(1)
   })
+  it('posted replies are findable via getTweet with default zero metrics', async () => {
+    const c = createDryRunClient()
+    const r = await c.postReply('orig', 'hello', 'someone')
+    const t = await c.getTweet(r.tweetId)
+    expect(t).not.toBeNull()
+    expect(t?.text).toBe('hello')
+    expect(t?.metrics?.likes).toBe(0)
+  })
 })

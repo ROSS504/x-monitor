@@ -110,3 +110,17 @@ CREATE TABLE IF NOT EXISTS customer_accounts (
   enabled INTEGER NOT NULL DEFAULT 1
 );
 CREATE INDEX IF NOT EXISTS idx_customer_enabled ON customer_accounts(enabled);
+
+CREATE TABLE IF NOT EXISTS post_analytics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sent_id INTEGER NOT NULL REFERENCES sent(id),
+  bucket TEXT NOT NULL,
+  likes INTEGER NOT NULL DEFAULT 0,
+  retweets INTEGER NOT NULL DEFAULT 0,
+  replies INTEGER NOT NULL DEFAULT 0,
+  bookmarks INTEGER NOT NULL DEFAULT 0,
+  views INTEGER,
+  collected_at INTEGER NOT NULL,
+  UNIQUE(sent_id, bucket)
+);
+CREATE INDEX IF NOT EXISTS idx_analytics_sent ON post_analytics(sent_id);

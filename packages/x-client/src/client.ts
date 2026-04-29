@@ -1,9 +1,18 @@
+export interface TweetMetrics {
+  likes: number
+  retweets: number
+  replies: number
+  bookmarks: number
+  views?: number
+}
+
 export interface XSearchResult {
   tweetId: string
   authorHandle: string
   text: string
   postedAt: number
   lang: string
+  metrics?: TweetMetrics
 }
 
 export interface XClient {

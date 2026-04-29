@@ -16,6 +16,14 @@ export function createDryRunClient(seeded: XSearchResult[] = []): DryRunXClient 
     async postReply(replyToTweetId, content, account) {
       const tweetId = `dry-${++counter}`
       posted.push({ replyToTweetId, content, account, tweetId })
+      searchSeed.push({
+        tweetId,
+        authorHandle: account,
+        text: content,
+        postedAt: Date.now(),
+        lang: 'en',
+        metrics: { likes: 0, retweets: 0, replies: 0, bookmarks: 0 },
+      })
       return { tweetId }
     },
     async getTweet(tweetId) {

@@ -71,6 +71,15 @@ module.exports = {
       ...COMMON,
     },
     {
+      name: 'analytics-worker',
+      script: 'apps/analytics-worker/dist/index.js',
+      max_memory_restart: '500M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/analytics-worker.out.log',
+      error_file: '.pm2/logs/analytics-worker.err.log',
+      ...COMMON,
+    },
+    {
       name: 'web-ui',
       cwd: `${REPO}/apps/web-ui`,
       script: 'node_modules/next/dist/bin/next',

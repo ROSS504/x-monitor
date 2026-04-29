@@ -39,6 +39,20 @@ function parsePostedAt(ts: string | null): number {
   return Number.isNaN(ms) ? Date.now() : ms
 }
 
+function parseMetrics(likesStr: string | null) {
+  // xactions returns likes as a string like "12" or "1.2K"; normalize best-effort
+  if (!likesStr) return { likes: 0, retweets: 0, replies: 0, bookmarks: 0 }
+  const cleaned = likesStr.replace(/,/g, '').trim()
+  const m = cleaned.match(/^(\d+(?:\.\d+)?)([KkMm]?)$/)
+  let likes = 0
+  if (m) {
+    const v = parseFloat(m[1])
+    const mult = m[2].toLowerCase() === 'k' ? 1_000 : m[2].toLowerCase() === 'm' ? 1_000_000 : 1
+    likes = Math.round(v * mult)
+  }
+  return { likes, retweets: 0, replies: 0, bookmarks: 0 }
+}
+
 export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXClient> {
   const authToken = readAuthToken(opts.cookiesPath)
   const browser: XActionsBrowser = await createBrowser({ headless: opts.headless ?? true })
@@ -56,6 +70,7 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
           text: t.text!,
           postedAt: parsePostedAt(t.timestamp),
           lang: 'en',
+          metrics: parseMetrics(t.likes ?? null),
         }))
     },
 
@@ -68,7 +83,9 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
     },
 
     async getTweet(_tweetId: string): Promise<XSearchResult | null> {
-      // Out of scope for M1 — analytics-worker will need this in M2
+      // Live engagement metrics scraping requires xactions's getEngagementAnalytics
+      // (loads tweet URL, parses counters per data-testid). Out of scope for M2.4.
+      // analytics-worker in dry-run will still produce snapshots from the dryRun client.
       return null
     },
 

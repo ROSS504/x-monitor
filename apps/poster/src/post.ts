@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3'
 import type { XClient } from '@x-monitor/x-client'
 import { draftsRepo, postsRepo, accountsRepo, sentRepo } from '@x-monitor/db'
+import { scheduleAllBuckets } from '@x-monitor/queue'
 
 export async function sendOne(
   db: Database.Database,
@@ -17,12 +18,17 @@ export async function sendOne(
 
   const r = await xc.postReply(post.tweetId, d.content, acct.handle)
 
-  sentRepo(db).insert({
+  const sentId = sentRepo(db).insert({
     draftId: d.id,
     tweetId: r.tweetId,
     accountId: acct.id,
     sentAt: Date.now(),
   })
   draftsRepo(db).updateStatus(d.id, 'sent')
+  try {
+    await scheduleAllBuckets({ sentId, tweetId: r.tweetId, traceId: `draft-${d.id}` })
+  } catch {
+    // analytics scheduling is best-effort — never fail a send because of it
+  }
   return { tweetId: r.tweetId }
 }
