@@ -25,6 +25,21 @@ importers:
         specifier: 1.6.0
         version: 1.6.0(@types/node@20.12.7)
 
+  apps/network-health:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@x-monitor/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@x-monitor/observability':
+        specifier: workspace:^
+        version: link:../../packages/observability
+      '@x-monitor/queue':
+        specifier: workspace:^
+        version: link:../../packages/queue
+
   packages/claude-client:
     dependencies:
       '@x-monitor/core':
