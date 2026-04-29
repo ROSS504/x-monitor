@@ -33,5 +33,10 @@ export function postsRepo(db: Database.Database) {
     updateStatus(id: number, status: PostStatus): void {
       db.prepare(`UPDATE posts SET status = ? WHERE id = ?`).run(status, id)
     },
+
+    latestCreatedAt(): number | null {
+      const r = db.prepare(`SELECT MAX(created_at) AS ts FROM posts`).get() as { ts: number | null }
+      return r.ts ?? null
+    },
   }
 }

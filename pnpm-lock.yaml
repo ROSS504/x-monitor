@@ -189,6 +189,31 @@ importers:
         specifier: ^12.9.0
         version: 12.9.0
 
+  apps/scanner-3rdparty:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@x-monitor/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@x-monitor/observability':
+        specifier: workspace:^
+        version: link:../../packages/observability
+      '@x-monitor/queue':
+        specifier: workspace:^
+        version: link:../../packages/queue
+      '@x-monitor/x-thirdparty':
+        specifier: workspace:^
+        version: link:../../packages/x-thirdparty
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.9.0
+        version: 12.9.0
+
   apps/scanner-browser:
     dependencies:
       '@x-monitor/core':
@@ -383,6 +408,12 @@ importers:
       xactions:
         specifier: file:/Users/nightyoung/xactions
         version: file:../../xactions(@swc/helpers@0.5.5)(@types/node@20.12.7)(puppeteer-core@24.42.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.4.5)(zod@4.3.6)
+
+  packages/x-thirdparty:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../core
 
 packages:
 

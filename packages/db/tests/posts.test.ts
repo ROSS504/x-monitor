@@ -43,4 +43,16 @@ describe('postsRepo', () => {
     postsRepo(db).updateStatus(id, 'analyzing')
     expect(postsRepo(db).findById(id)?.status).toBe('analyzing')
   })
+
+  it('latestCreatedAt returns null on empty table and the max otherwise', () => {
+    expect(postsRepo(db).latestCreatedAt()).toBeNull()
+    postsRepo(db).insert({
+      tweetId: '123', authorHandle: 'alice', text: 'hello',
+      postedAt: 1000, lang: 'en', source: 'browser',
+      scenarioHint: null, status: 'discovered', traceId: 'abc',
+    })
+    const ts = postsRepo(db).latestCreatedAt()
+    expect(ts).not.toBeNull()
+    expect(ts!).toBeGreaterThan(0)
+  })
 })
