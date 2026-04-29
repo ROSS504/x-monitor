@@ -8,12 +8,12 @@ export default function HomePage() {
   const sentToday = sentRepo(db).countTodayForAccount(1, Date.now())
   return (
     <main>
-      <h1>Overview</h1>
+      <h1>概览</h1>
       <div style={{ display: 'flex', gap: 24, marginBottom: 32 }}>
-        <Stat label="Pending review" value={pendingCount} />
-        <Stat label="Sent today (account 1)" value={sentToday} />
+        <Stat label="待审核草稿" value={pendingCount} />
+        <Stat label="今日已发送（账号 1）" value={sentToday} />
       </div>
-      <h2>Inject test post</h2>
+      <h2>注入测试帖子</h2>
       <InjectForm />
     </main>
   )
@@ -40,20 +40,20 @@ function InjectForm() {
     <form action="/api/test/inject-post" method="post" encType="application/json">
       <textarea
         name="text"
-        placeholder="Paste a tweet text..."
+        placeholder="粘贴一条推文文本…"
         rows={3}
         style={{ width: '100%', padding: 8 }}
       />
       <input
         name="authorHandle"
-        placeholder="author handle"
+        placeholder="作者用户名"
         style={{ marginTop: 8, padding: 6 }}
       />
       <button type="submit" style={{ marginTop: 8, padding: '8px 16px' }}>
-        Inject
+        注入
       </button>
       <p style={{ color: '#888', fontSize: 12 }}>
-        Note: dev tool. Browser cannot POST application/json directly via form. Use:{' '}
+        说明：开发工具。浏览器无法通过表单直接 POST application/json，请用：{' '}
         <code>
           curl -XPOST http://localhost:3000/api/test/inject-post -H &apos;content-type:
           application/json&apos; -d &apos;{`{"text":"...","authorHandle":"alice"}`}&apos;

@@ -8,14 +8,14 @@ export default function StatusPage() {
   const now = Date.now()
   return (
     <main>
-      <h1>System status</h1>
+      <h1>系统状态</h1>
       <table style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
           <tr>
-            <th align="left">Process</th>
-            <th align="left">Status</th>
-            <th align="left">Last heartbeat</th>
-            <th align="left">Last error</th>
+            <th align="left">进程</th>
+            <th align="left">状态</th>
+            <th align="left">上次心跳</th>
+            <th align="left">最近错误</th>
           </tr>
         </thead>
         <tbody>
@@ -24,8 +24,8 @@ export default function StatusPage() {
             return (
               <tr key={p.processName} style={{ borderTop: '1px solid #eee' }}>
                 <td>{p.processName}</td>
-                <td>{p.status}</td>
-                <td>{ageS}s ago</td>
+                <td>{p.status === 'ok' ? '正常' : '异常'}</td>
+                <td>{ageS} 秒前</td>
                 <td style={{ color: '#c33', fontSize: 12 }}>{p.lastError ?? ''}</td>
               </tr>
             )

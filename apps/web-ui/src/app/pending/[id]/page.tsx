@@ -9,14 +9,14 @@ export default function DraftDetailPage({ params }: { params: { id: string } }) 
   if (!draft)
     return (
       <main>
-        <h1>Not found</h1>
+        <h1>未找到</h1>
       </main>
     )
   const post = postsRepo(db).findById(draft.postId)
   return (
     <main>
-      <h1>Draft #{draft.id}</h1>
-      <h2>Original post</h2>
+      <h1>草稿 #{draft.id}</h1>
+      <h2>原帖</h2>
       <div
         style={{
           padding: 12,
@@ -30,7 +30,7 @@ export default function DraftDetailPage({ params }: { params: { id: string } }) 
         </div>
         <div style={{ marginTop: 4 }}>{post?.text}</div>
       </div>
-      <h2>Reply</h2>
+      <h2>回复内容</h2>
       <div
         style={{
           padding: 12,
@@ -41,7 +41,7 @@ export default function DraftDetailPage({ params }: { params: { id: string } }) 
       >
         {draft.content}
       </div>
-      <h2>Citations</h2>
+      <h2>出处</h2>
       <ul>
         {draft.citations.map((c, i) => (
           <li key={i}>
@@ -61,7 +61,7 @@ export default function DraftDetailPage({ params }: { params: { id: string } }) 
               borderRadius: 4,
             }}
           >
-            Approve
+            通过
           </button>
         </form>
         <form action={`/api/pending/${draft.id}/reject`} method="post">
@@ -75,7 +75,7 @@ export default function DraftDetailPage({ params }: { params: { id: string } }) 
               borderRadius: 4,
             }}
           >
-            Reject
+            驳回
           </button>
         </form>
       </div>

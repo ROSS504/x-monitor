@@ -7,9 +7,9 @@ export default function PendingListPage() {
   const drafts = draftsRepo(db).listByStatus('pending')
   return (
     <main>
-      <h1>Pending review ({drafts.length})</h1>
+      <h1>待审核草稿（{drafts.length}）</h1>
       {drafts.length === 0 ? (
-        <p>No drafts pending review.</p>
+        <p>暂无待审核草稿。</p>
       ) : (
         <ul style={{ listStyle: 'none', padding: 0 }}>
           {drafts.map((d) => {
@@ -25,10 +25,10 @@ export default function PendingListPage() {
                 }}
               >
                 <a href={`/pending/${d.id}`} style={{ fontWeight: 600 }}>
-                  Draft #{d.id}
+                  草稿 #{d.id}
                 </a>
                 <div style={{ color: '#666', fontSize: 13, marginTop: 4 }}>
-                  Original by @{post?.authorHandle}: {post?.text?.slice(0, 120)}
+                  原帖（@{post?.authorHandle}）：{post?.text?.slice(0, 120)}
                 </div>
                 <div style={{ marginTop: 8 }}>{d.content}</div>
               </li>
