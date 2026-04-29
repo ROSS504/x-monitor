@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3'
 import type { Draft, DraftStatus } from '@x-monitor/core'
 
-interface InsertDraftInput {
+export interface InsertDraftInput {
   postId: number
   accountId: number
   content: string
@@ -10,6 +10,7 @@ interface InsertDraftInput {
   strategy: string | null
   status: DraftStatus
   idempotencyKey: string
+  promptVersion?: string | null
 }
 
 function rowToDraft(r: any): Draft {
@@ -30,12 +31,13 @@ export function draftsRepo(db: Database.Database) {
   return {
     insert(d: InsertDraftInput): number {
       const stmt = db.prepare(`
-        INSERT INTO drafts (post_id, account_id, content, format, citations_json, strategy, status, idempotency_key, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO drafts (post_id, account_id, content, format, citations_json, strategy, status, idempotency_key, created_at, prompt_version)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
       const info = stmt.run(
         d.postId, d.accountId, d.content, d.format,
         JSON.stringify(d.citations), d.strategy, d.status, d.idempotencyKey, Date.now(),
+        d.promptVersion ?? null,
       )
       return Number(info.lastInsertRowid)
     },
