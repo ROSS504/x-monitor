@@ -18,6 +18,16 @@ declare module 'xactions' {
     opts?: { limit?: number; filter?: 'latest' | 'top' | 'people' | 'photos' | 'videos' },
   ): Promise<XActionsTweet[]>
 
+  export interface EngagementAnalyticsResult {
+    url: string
+    analytics: {
+      likes: string
+      reposts: string
+      replies: string
+      impressions: string
+    } | null
+    scrapedAt: string
+  }
   interface EngagementManager {
     replyToTweet(
       page: XActionsPage,
@@ -25,6 +35,31 @@ declare module 'xactions' {
       replyText: string,
       opts?: { media?: string | null },
     ): Promise<{ success: boolean; action: string; url: string; reply: string; timestamp: string }>
+    getEngagementAnalytics(page: XActionsPage, tweetUrl: string): Promise<EngagementAnalyticsResult>
   }
   export const engagementManager: EngagementManager
+
+  export interface DmConversation {
+    name: string
+    lastMessage: string
+    time: string
+    unread: boolean
+  }
+  export interface DmExportedMessage {
+    text: string
+    time: string
+    sender: string
+  }
+  interface DmManager {
+    getConversations(
+      page: XActionsPage,
+      opts?: { limit?: number },
+    ): Promise<{ conversations: DmConversation[]; scrapedAt: string }>
+    exportConversation(
+      page: XActionsPage,
+      conversationUrl: string,
+      opts?: { limit?: number },
+    ): Promise<{ conversationUrl: string; messages: DmExportedMessage[]; count: number; exportedAt: string }>
+  }
+  export const dmManager: DmManager
 }

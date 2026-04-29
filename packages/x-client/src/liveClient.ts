@@ -1,14 +1,17 @@
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import {
   createBrowser,
   createPage,
   loginWithCookie,
   searchTweets,
   engagementManager,
+  dmManager,
   type XActionsBrowser,
   type XActionsPage,
 } from 'xactions'
-import type { XClient, XSearchResult } from './client.js'
+import type { XClient, XSearchResult, DmMessage } from './client.js'
+import { parseCount } from './parseCounts.js'
 
 interface CookieEntry {
   name: string
@@ -39,18 +42,12 @@ function parsePostedAt(ts: string | null): number {
   return Number.isNaN(ms) ? Date.now() : ms
 }
 
-function parseMetrics(likesStr: string | null) {
-  // xactions returns likes as a string like "12" or "1.2K"; normalize best-effort
-  if (!likesStr) return { likes: 0, retweets: 0, replies: 0, bookmarks: 0 }
-  const cleaned = likesStr.replace(/,/g, '').trim()
-  const m = cleaned.match(/^(\d+(?:\.\d+)?)([KkMm]?)$/)
-  let likes = 0
-  if (m) {
-    const v = parseFloat(m[1])
-    const mult = m[2].toLowerCase() === 'k' ? 1_000 : m[2].toLowerCase() === 'm' ? 1_000_000 : 1
-    likes = Math.round(v * mult)
-  }
-  return { likes, retweets: 0, replies: 0, bookmarks: 0 }
+function searchMetricsFromLikes(likesStr: string | null) {
+  return { likes: parseCount(likesStr), retweets: 0, replies: 0, bookmarks: 0 }
+}
+
+function dmMessageId(name: string, text: string, time: string): string {
+  return createHash('sha1').update(`${name}|${time}|${text}`).digest('hex').slice(0, 32)
 }
 
 export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXClient> {
@@ -70,7 +67,7 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
           text: t.text!,
           postedAt: parsePostedAt(t.timestamp),
           lang: 'en',
-          metrics: parseMetrics(t.likes ?? null),
+          metrics: searchMetricsFromLikes(t.likes ?? null),
         }))
     },
 
@@ -82,17 +79,54 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
       return { tweetId: `live-${accountHandle}-${Date.now()}` }
     },
 
-    async getTweet(_tweetId: string): Promise<XSearchResult | null> {
-      // Live engagement metrics scraping requires xactions's getEngagementAnalytics
-      // (loads tweet URL, parses counters per data-testid). Out of scope for M2.4.
-      // analytics-worker in dry-run will still produce snapshots from the dryRun client.
-      return null
+    async getTweet(tweetId: string): Promise<XSearchResult | null> {
+      // xactions's getEngagementAnalytics returns metric strings (likes/reposts/replies/impressions)
+      // for a given tweet URL. It does NOT surface authorHandle or text — callers (analytics-worker
+      // snapshot) only consume `metrics`, so we leave handle/text as placeholders.
+      const url = `https://x.com/i/web/status/${tweetId}`
+      try {
+        const result = await engagementManager.getEngagementAnalytics(page, url)
+        if (!result.analytics) return null
+        return {
+          tweetId,
+          authorHandle: 'unknown',
+          text: '',
+          postedAt: Date.parse(result.scrapedAt) || Date.now(),
+          lang: 'en',
+          metrics: {
+            likes: parseCount(result.analytics.likes),
+            retweets: parseCount(result.analytics.reposts),
+            replies: parseCount(result.analytics.replies),
+            bookmarks: 0, // xactions doesn't surface bookmarks via getEngagementAnalytics
+            views: parseCount(result.analytics.impressions) || undefined,
+          },
+        }
+      } catch {
+        return null
+      }
     },
 
-    async listDMs(_sinceMs: number) {
-      // Live DM collection requires xactions's dmManager.scrapeInbox (not yet wired).
-      // Returning empty for now — dm-collector logs zero new DMs in live mode until this is added.
-      return []
+    async listDMs(sinceMs: number): Promise<DmMessage[]> {
+      // xactions's getConversations only returns conversation summaries (name/lastMessage/time/unread),
+      // not individual messageIds. We synthesize a stable hash-based messageId so dm-collector's
+      // insertIfNew dedupes correctly across polls. Older message history isn't fetched here.
+      try {
+        const r = await dmManager.getConversations(page, { limit: 50 })
+        return r.conversations
+          .map(c => {
+            const sentAt = parsePostedAt(c.time || null)
+            return {
+              conversationId: c.name || 'unknown',
+              messageId: dmMessageId(c.name, c.lastMessage, c.time),
+              senderHandle: c.name.replace(/^@/, '').trim() || 'unknown',
+              text: c.lastMessage,
+              sentAt,
+            }
+          })
+          .filter(d => d.sentAt >= sinceMs)
+      } catch {
+        return []
+      }
     },
 
     async shutdown() {
