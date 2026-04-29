@@ -124,3 +124,18 @@ CREATE TABLE IF NOT EXISTS post_analytics (
   UNIQUE(sent_id, bucket)
 );
 CREATE INDEX IF NOT EXISTS idx_analytics_sent ON post_analytics(sent_id);
+
+CREATE TABLE IF NOT EXISTS dms (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
+  conversation_id TEXT NOT NULL,
+  sender_handle TEXT NOT NULL,
+  message_id TEXT NOT NULL UNIQUE,
+  text TEXT NOT NULL,
+  sent_at INTEGER NOT NULL,
+  attributed_sent_id INTEGER REFERENCES sent(id),
+  collected_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_dms_account ON dms(account_id);
+CREATE INDEX IF NOT EXISTS idx_dms_sender ON dms(sender_handle);
+CREATE INDEX IF NOT EXISTS idx_dms_attributed ON dms(attributed_sent_id);

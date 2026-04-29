@@ -25,4 +25,14 @@ describe('DryRunXClient', () => {
     expect(t?.text).toBe('hello')
     expect(t?.metrics?.likes).toBe(0)
   })
+  it('seedDMs + listDMs filters by sinceMs', async () => {
+    const c = createDryRunClient()
+    c.seedDMs([
+      { conversationId: 'c1', messageId: 'm1', senderHandle: 'alice', text: 'hi', sentAt: 1000 },
+      { conversationId: 'c1', messageId: 'm2', senderHandle: 'alice', text: 'old', sentAt: 100 },
+    ])
+    const recent = await c.listDMs(500)
+    expect(recent).toHaveLength(1)
+    expect(recent[0].messageId).toBe('m1')
+  })
 })

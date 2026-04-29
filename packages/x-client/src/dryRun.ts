@@ -1,17 +1,22 @@
-import type { XClient, XSearchResult } from './client.js'
+import type { XClient, XSearchResult, DmMessage } from './client.js'
 
 export interface DryRunXClient extends XClient {
   posted: { replyToTweetId: string; content: string; account: string; tweetId: string }[]
   seedSearch: (results: XSearchResult[]) => void
+  seedDMs: (dms: DmMessage[]) => void
+  readonly dmInbox: DmMessage[]
 }
 
 export function createDryRunClient(seeded: XSearchResult[] = []): DryRunXClient {
   const posted: DryRunXClient['posted'] = []
   let searchSeed = [...seeded]
+  let dmInboxArr: DmMessage[] = []
   let counter = 0
   const client: DryRunXClient = {
     posted,
     seedSearch(r) { searchSeed = [...r] },
+    seedDMs(dms: DmMessage[]) { dmInboxArr = [...dms] },
+    get dmInbox() { return dmInboxArr },
     async search(_q, _since) { return searchSeed },
     async postReply(replyToTweetId, content, account) {
       const tweetId = `dry-${++counter}`
@@ -28,6 +33,9 @@ export function createDryRunClient(seeded: XSearchResult[] = []): DryRunXClient 
     },
     async getTweet(tweetId) {
       return searchSeed.find(r => r.tweetId === tweetId) ?? null
+    },
+    async listDMs(sinceMs: number) {
+      return dmInboxArr.filter(d => d.sentAt >= sinceMs)
     },
   }
   return client

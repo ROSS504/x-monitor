@@ -89,6 +89,12 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
       return null
     },
 
+    async listDMs(_sinceMs: number) {
+      // Live DM collection requires xactions's dmManager.scrapeInbox (not yet wired).
+      // Returning empty for now — dm-collector logs zero new DMs in live mode until this is added.
+      return []
+    },
+
     async shutdown() {
       await page.close()
       await browser.close()

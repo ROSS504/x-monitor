@@ -80,6 +80,15 @@ module.exports = {
       ...COMMON,
     },
     {
+      name: 'dm-collector',
+      script: 'apps/dm-collector/dist/index.js',
+      max_memory_restart: '500M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/dm-collector.out.log',
+      error_file: '.pm2/logs/dm-collector.err.log',
+      ...COMMON,
+    },
+    {
       name: 'web-ui',
       cwd: `${REPO}/apps/web-ui`,
       script: 'node_modules/next/dist/bin/next',
