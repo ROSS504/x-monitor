@@ -107,6 +107,15 @@ module.exports = {
       ...COMMON,
     },
     {
+      name: 'watchdog',
+      script: 'apps/watchdog/dist/index.js',
+      max_memory_restart: '100M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/watchdog.out.log',
+      error_file: '.pm2/logs/watchdog.err.log',
+      ...COMMON,
+    },
+    {
       name: 'fresh-kb-indexer',
       script: 'apps/fresh-kb-indexer/dist/index.js',
       max_memory_restart: '200M',

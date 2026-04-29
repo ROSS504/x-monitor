@@ -17,6 +17,7 @@ export const PROCESS_EXPECTATIONS: ProcessExpectation[] = [
   { name: 'ai-worker',        kind: 'live',         staleSeconds: 10 * 60 },
   { name: 'scheduler',        kind: 'live',         staleSeconds: 5  * 60 },
   { name: 'dm-collector',     kind: 'live',         staleSeconds: 30 * 60 },
+  { name: 'watchdog',         kind: 'live',         staleSeconds: 10 * 60 },
   // event-driven — only heartbeat when work arrives; silence is acceptable up to 24h
   { name: 'poster',           kind: 'event-driven', staleSeconds: 24 * 3600 },
   { name: 'analytics-worker', kind: 'event-driven', staleSeconds: 24 * 3600 },
