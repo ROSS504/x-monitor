@@ -127,6 +127,25 @@ importers:
         specifier: ^12.9.0
         version: 12.9.0
 
+  apps/health-monitor:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@x-monitor/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@x-monitor/observability':
+        specifier: workspace:^
+        version: link:../../packages/observability
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.9.0
+        version: 12.9.0
+
   apps/network-health:
     dependencies:
       '@x-monitor/core':

@@ -89,6 +89,15 @@ module.exports = {
       ...COMMON,
     },
     {
+      name: 'health-monitor',
+      script: 'apps/health-monitor/dist/index.js',
+      max_memory_restart: '200M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/health-monitor.out.log',
+      error_file: '.pm2/logs/health-monitor.err.log',
+      ...COMMON,
+    },
+    {
       name: 'web-ui',
       cwd: `${REPO}/apps/web-ui`,
       script: 'node_modules/next/dist/bin/next',
