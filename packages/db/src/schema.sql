@@ -1,0 +1,101 @@
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  version INTEGER PRIMARY KEY,
+  applied_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  handle TEXT NOT NULL UNIQUE,
+  role TEXT NOT NULL,
+  cookies_path TEXT NOT NULL,
+  daily_limit INTEGER NOT NULL DEFAULT 30,
+  min_interval_min INTEGER NOT NULL DEFAULT 15,
+  business_hours_json TEXT NOT NULL,
+  cooldown_until INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  tweet_id TEXT NOT NULL UNIQUE,
+  author_handle TEXT NOT NULL,
+  text TEXT NOT NULL,
+  posted_at INTEGER NOT NULL,
+  lang TEXT NOT NULL,
+  source TEXT NOT NULL,
+  scenario_hint TEXT,
+  status TEXT NOT NULL,
+  trace_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  archived_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_posts_status ON posts(status);
+CREATE INDEX IF NOT EXISTS idx_posts_trace ON posts(trace_id);
+
+CREATE TABLE IF NOT EXISTS post_analysis (
+  post_id INTEGER PRIMARY KEY REFERENCES posts(id),
+  type TEXT,
+  viewpoint TEXT,
+  scenario TEXT,
+  kb_match_score REAL,
+  kb_chunks_json TEXT,
+  analyzed_at INTEGER NOT NULL,
+  prompt_version TEXT
+);
+
+CREATE TABLE IF NOT EXISTS drafts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  post_id INTEGER NOT NULL REFERENCES posts(id),
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
+  content TEXT NOT NULL,
+  format TEXT NOT NULL DEFAULT 'single',
+  citations_json TEXT NOT NULL DEFAULT '[]',
+  strategy TEXT,
+  status TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL,
+  prompt_version TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(status);
+
+CREATE TABLE IF NOT EXISTS scheduled (
+  draft_id INTEGER PRIMARY KEY REFERENCES drafts(id),
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
+  target_send_at INTEGER NOT NULL,
+  priority INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_scheduled_target ON scheduled(target_send_at);
+
+CREATE TABLE IF NOT EXISTS sent (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  draft_id INTEGER NOT NULL UNIQUE REFERENCES drafts(id),
+  tweet_id TEXT NOT NULL UNIQUE,
+  account_id INTEGER NOT NULL REFERENCES accounts(id),
+  sent_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  actor TEXT NOT NULL,
+  action TEXT NOT NULL,
+  target_type TEXT,
+  target_id INTEGER,
+  payload_json TEXT,
+  trace_id TEXT,
+  at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS dead_letter (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_type TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  last_error TEXT NOT NULL,
+  retry_count INTEGER NOT NULL,
+  moved_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_health (
+  process_name TEXT PRIMARY KEY,
+  last_heartbeat INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  last_error TEXT
+);
