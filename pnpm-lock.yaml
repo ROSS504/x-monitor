@@ -8,9 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@x-monitor/app-ai-worker':
+        specifier: workspace:^
+        version: link:apps/ai-worker
       '@x-monitor/db':
         specifier: workspace:^
         version: link:packages/db
+      '@x-monitor/observability':
+        specifier: workspace:^
+        version: link:packages/observability
+      '@x-monitor/queue':
+        specifier: workspace:^
+        version: link:packages/queue
     devDependencies:
       '@types/node':
         specifier: 20.12.7
