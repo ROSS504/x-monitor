@@ -15,6 +15,9 @@ const ROUTES = [
   'src/app/api/playbooks/route.ts',
   'src/app/api/playbooks/[id]/toggle/route.ts',
   'src/app/api/playbooks/[id]/delete/route.ts',
+  'src/app/api/customers/route.ts',
+  'src/app/api/customers/[id]/toggle/route.ts',
+  'src/app/api/customers/[id]/delete/route.ts',
 ]
 
 describe('api routes exist', () => {

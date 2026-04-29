@@ -30,6 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <a href="/customers">潜客</a>
           <a href="/playbooks">策略</a>
           <a href="/kb">知识库</a>
+          <a href="/audit">日志</a>
           <a href="/status">系统状态</a>
         </nav>
         {children}

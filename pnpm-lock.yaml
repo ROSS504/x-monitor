@@ -11,6 +11,9 @@ importers:
       '@x-monitor/app-ai-worker':
         specifier: workspace:^
         version: link:apps/ai-worker
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:packages/core
       '@x-monitor/db':
         specifier: workspace:^
         version: link:packages/db

@@ -68,5 +68,18 @@ export function customersRepo(db: Database.Database) {
     setEnabled(id: number, enabled: boolean): void {
       db.prepare(`UPDATE customer_accounts SET enabled = ? WHERE id = ?`).run(enabled ? 1 : 0, id)
     },
+
+    deleteById(id: number): void {
+      db.prepare(`DELETE FROM customer_accounts WHERE id = ?`).run(id)
+    },
+
+    update(id: number, patch: { displayName?: string | null; notes?: string | null }): void {
+      db.prepare(`
+        UPDATE customer_accounts
+        SET display_name = COALESCE(?, display_name),
+            notes = COALESCE(?, notes)
+        WHERE id = ?
+      `).run(patch.displayName ?? null, patch.notes ?? null, id)
+    },
   }
 }

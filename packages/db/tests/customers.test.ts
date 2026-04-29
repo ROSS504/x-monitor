@@ -31,4 +31,10 @@ describe('customersRepo', () => {
     expect(customersRepo(db).listEnabled()).toHaveLength(0)
     expect(customersRepo(db).list()).toHaveLength(1)
   })
+
+  it('deleteById removes the row', () => {
+    const id = customersRepo(db).insert({ handle: 'temp' })
+    customersRepo(db).deleteById(id)
+    expect(customersRepo(db).list()).toHaveLength(0)
+  })
 })

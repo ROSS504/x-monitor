@@ -23,6 +23,7 @@
   "packageManager": "pnpm@9.0.0",
   "dependencies": {
     "@x-monitor/app-ai-worker": "workspace:^",
+    "@x-monitor/core": "workspace:^",
     "@x-monitor/db": "workspace:^",
     "@x-monitor/dify-client": "workspace:^",
     "@x-monitor/observability": "workspace:^",
