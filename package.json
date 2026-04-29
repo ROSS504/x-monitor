@@ -1,0 +1,19 @@
+{
+  "name": "x-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter='./packages/*' --filter='./apps/*' build",
+    "test": "pnpm -r --filter='./packages/*' --filter='./apps/*' test",
+    "lint": "pnpm -r lint",
+    "dev": "pm2 start ecosystem.config.cjs",
+    "stop": "pm2 stop ecosystem.config.cjs"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "vitest": "1.6.0",
+    "@types/node": "20.12.7"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
