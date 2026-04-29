@@ -164,3 +164,16 @@ CREATE TABLE IF NOT EXISTS kb_documents (
   last_synced_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_kb_docs_status ON kb_documents(indexing_status);
+
+CREATE TABLE IF NOT EXISTS post_engagement (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  post_id INTEGER NOT NULL REFERENCES posts(id),
+  likes INTEGER NOT NULL DEFAULT 0,
+  retweets INTEGER NOT NULL DEFAULT 0,
+  replies INTEGER NOT NULL DEFAULT 0,
+  bookmarks INTEGER NOT NULL DEFAULT 0,
+  views INTEGER,
+  scraped_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_engagement_post ON post_engagement(post_id);
+CREATE INDEX IF NOT EXISTS idx_engagement_scraped ON post_engagement(scraped_at);

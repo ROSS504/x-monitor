@@ -29,6 +29,7 @@
     "@x-monitor/dify-client": "workspace:^",
     "@x-monitor/observability": "workspace:^",
     "@x-monitor/queue": "workspace:^",
-    "@x-monitor/x-client": "workspace:^"
+    "@x-monitor/x-client": "workspace:^",
+    "xactions": "file:/Users/nightyoung/xactions"
   }
 }

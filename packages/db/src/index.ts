@@ -19,3 +19,4 @@ export {
   type InsertPlaybookInput,
 } from './repos/playbooks.js'
 export { kbDocsRepo, type KbDocumentRow, type UpsertKbDocInput } from './repos/kbDocs.js'
+export { engagementRepo, type PostEngagementRow, type InsertEngagementInput } from './repos/engagement.js'
