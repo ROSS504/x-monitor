@@ -25,6 +25,43 @@ importers:
         specifier: 1.6.0
         version: 1.6.0(@types/node@20.12.7)
 
+  apps/ai-worker:
+    dependencies:
+      '@x-monitor/claude-client':
+        specifier: workspace:^
+        version: link:../../packages/claude-client
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../../packages/core
+      '@x-monitor/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@x-monitor/kb-fixture':
+        specifier: workspace:^
+        version: link:../../packages/kb-fixture
+      '@x-monitor/observability':
+        specifier: workspace:^
+        version: link:../../packages/observability
+      '@x-monitor/prompts':
+        specifier: workspace:^
+        version: link:../../packages/prompts
+      '@x-monitor/queue':
+        specifier: workspace:^
+        version: link:../../packages/queue
+      '@x-monitor/rules':
+        specifier: workspace:^
+        version: link:../../packages/rules
+      bullmq:
+        specifier: ^5.76.3
+        version: 5.76.3
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.13
+        version: 7.6.13
+      better-sqlite3:
+        specifier: ^12.9.0
+        version: 12.9.0
+
   apps/network-health:
     dependencies:
       '@x-monitor/core':

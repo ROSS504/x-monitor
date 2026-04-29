@@ -1,0 +1,26 @@
+{
+  "name": "@x-monitor/app-ai-worker",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@x-monitor/claude-client": "workspace:^",
+    "@x-monitor/core": "workspace:^",
+    "@x-monitor/db": "workspace:^",
+    "@x-monitor/kb-fixture": "workspace:^",
+    "@x-monitor/observability": "workspace:^",
+    "@x-monitor/prompts": "workspace:^",
+    "@x-monitor/queue": "workspace:^",
+    "@x-monitor/rules": "workspace:^",
+    "bullmq": "^5.76.3"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.9.0"
+  }
+}
