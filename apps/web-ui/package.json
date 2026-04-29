@@ -12,6 +12,7 @@
     "@x-monitor/core": "workspace:^",
     "@x-monitor/db": "workspace:^",
     "@x-monitor/queue": "workspace:^",
+    "better-sqlite3": "^12.9.0",
     "next": "14",
     "react": "18",
     "react-dom": "18"

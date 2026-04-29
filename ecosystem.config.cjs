@@ -1,0 +1,77 @@
+const REPO = '/Users/nightyoung/IdeaProjects/x-monitor'
+
+const SHARED_ENV = {
+  SQLITE_PATH: `${REPO}/data/x-monitor.db`,
+  REDIS_URL: 'redis://localhost:6379',
+  POSTER_DRY_RUN: '1',
+  X_CLIENT_MODE: 'dry',
+}
+
+const COMMON = {
+  autorestart: true,
+  min_uptime: 5000,
+  env: SHARED_ENV,
+  cwd: REPO,
+}
+
+module.exports = {
+  apps: [
+    {
+      name: 'network-health',
+      script: 'apps/network-health/dist/index.js',
+      max_memory_restart: '200M',
+      restart_delay: 3000,
+      out_file: '.pm2/logs/network-health.out.log',
+      error_file: '.pm2/logs/network-health.err.log',
+      ...COMMON,
+    },
+    {
+      name: 'scanner-browser',
+      script: 'apps/scanner-browser/dist/index.js',
+      max_memory_restart: '500M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/scanner-browser.out.log',
+      error_file: '.pm2/logs/scanner-browser.err.log',
+      ...COMMON,
+    },
+    {
+      name: 'ai-worker',
+      script: 'apps/ai-worker/dist/index.js',
+      max_memory_restart: '500M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/ai-worker.out.log',
+      error_file: '.pm2/logs/ai-worker.err.log',
+      ...COMMON,
+    },
+    {
+      name: 'scheduler',
+      script: 'apps/scheduler/dist/index.js',
+      max_memory_restart: '200M',
+      restart_delay: 3000,
+      out_file: '.pm2/logs/scheduler.out.log',
+      error_file: '.pm2/logs/scheduler.err.log',
+      ...COMMON,
+    },
+    {
+      name: 'poster',
+      script: 'apps/poster/dist/index.js',
+      max_memory_restart: '500M',
+      restart_delay: 5000,
+      out_file: '.pm2/logs/poster.out.log',
+      error_file: '.pm2/logs/poster.err.log',
+      ...COMMON,
+    },
+    {
+      name: 'web-ui',
+      cwd: `${REPO}/apps/web-ui`,
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3000',
+      autorestart: true,
+      min_uptime: 5000,
+      max_memory_restart: '500M',
+      env: SHARED_ENV,
+      out_file: `${REPO}/.pm2/logs/web-ui.out.log`,
+      error_file: `${REPO}/.pm2/logs/web-ui.err.log`,
+    },
+  ],
+}
