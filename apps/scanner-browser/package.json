@@ -1,0 +1,22 @@
+{
+  "name": "@x-monitor/app-scanner-browser",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@x-monitor/core": "workspace:^",
+    "@x-monitor/db": "workspace:^",
+    "@x-monitor/observability": "workspace:^",
+    "@x-monitor/queue": "workspace:^",
+    "@x-monitor/x-client": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.9.0"
+  }
+}
