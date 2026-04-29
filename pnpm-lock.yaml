@@ -65,6 +65,15 @@ importers:
         specifier: ^12.9.0
         version: 12.9.0
 
+  packages/prompts:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../core
+      '@x-monitor/kb-fixture':
+        specifier: workspace:^
+        version: link:../kb-fixture
+
   packages/queue:
     dependencies:
       '@x-monitor/core':
