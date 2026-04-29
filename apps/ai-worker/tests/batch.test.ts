@@ -53,4 +53,32 @@ describe('processBatch (integration with redis + sqlite)', () => {
     expect(drafts).toHaveLength(1)
     expect(drafts[0].content).toContain('Great question')
   }, 20_000)
+
+  it('drafts via synthesis when scenario=2 and KB matches', async () => {
+    const postId = postsRepo(db).insert({
+      tweetId: 'tx2', authorHandle: 'bob',
+      text: 'DeFi tax across jurisdictions seems confusing',
+      postedAt: Date.now(), lang: 'en', source: 'browser',
+      scenarioHint: 'keyword:crypto', status: 'discovered', traceId: 'trace-2',
+    })
+    await aiTasksQ.add('analyze', { postId, traceId: 'trace-2' })
+
+    const fakeRun = vi.fn(async ({ prompt }: { prompt: string }) => {
+      if (prompt.includes('Classify')) {
+        return { text: '{"type":"opinion","scenario":"2","viewpoint":"confused about jurisdictions"}', durationMs: 50 }
+      }
+      return {
+        text: '{"content":"Jurisdiction varies — some require FMV reporting at receipt. https://fintax.tech/defi-tax","citations":[{"chunkId":"defi-1","quote":"varies by jurisdiction"}]}',
+        durationMs: 100,
+      }
+    })
+
+    const log = { info: () => {}, warn: () => {}, error: () => {} }
+    const r = await processBatch(db, log, { runPrompt: fakeRun as any })
+    expect(r.processed).toBeGreaterThanOrEqual(1)
+    const drafts = draftsRepo(db).listByStatus('pending')
+    const synthDrafts = drafts.filter(d => d.strategy === 'kb-synthesis')
+    expect(synthDrafts).toHaveLength(1)
+    expect(synthDrafts[0].content).toContain('Jurisdiction')
+  }, 20_000)
 })

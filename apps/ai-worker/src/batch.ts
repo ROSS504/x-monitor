@@ -5,6 +5,7 @@ import { postsRepo, draftsRepo, accountsRepo, deadLetterRepo } from '@x-monitor/
 import { runPrompt } from '@x-monitor/claude-client'
 import { analyzeOne, type AnalyzeDeps } from './analyze.js'
 import { draftOne, type DraftDeps } from './draft.js'
+import { synthesizeOne } from './synthesize.js'
 import { createHash } from 'node:crypto'
 import type { Logger } from '@x-monitor/observability'
 
@@ -36,36 +37,63 @@ export async function processBatch(
       { text: post.text, authorHandle: post.authorHandle },
       { runPrompt: deps.runPrompt },
     )
-    if (analysis.scenario !== '1') {
+    if (analysis.scenario === 'skip') {
       postsRepo(db).updateStatus(post.id, 'no_match')
-      log.info('skipped scenario', { postId: post.id, scenario: analysis.scenario, traceId: post.traceId })
+      log.info('skipped scenario', { postId: post.id, scenario: 'skip', traceId: post.traceId })
       return
     }
-    const dr = await draftOne(
-      { text: post.text, authorHandle: post.authorHandle },
-      { runPrompt: deps.runPrompt },
-    )
-    if (!dr.draft) {
+
+    let draftPayload: { content: string; citations: { chunkId: string; quote: string }[] } | null = null
+    let strategy: string | null = null
+    let articleId: string | undefined
+    let promptVersion: string
+
+    if (analysis.scenario === '1') {
+      const dr = await draftOne(
+        { text: post.text, authorHandle: post.authorHandle },
+        { runPrompt: deps.runPrompt },
+      )
+      draftPayload = dr.draft
+      strategy = 'article-match'
+      articleId = dr.articleId
+      promptVersion = dr.promptVersion
+    } else if (analysis.scenario === '2') {
+      const sr = await synthesizeOne(
+        { text: post.text, authorHandle: post.authorHandle, viewpoint: analysis.viewpoint },
+        { runPrompt: deps.runPrompt },
+      )
+      draftPayload = sr.draft
+      strategy = 'kb-synthesis'
+      promptVersion = sr.promptVersion
+    } else {
+      // scenario === '3' — handled by a future scenario-3-specific worker; for now skip
       postsRepo(db).updateStatus(post.id, 'no_match')
-      log.info('no kb match', { postId: post.id, matchScore: dr.matchScore, traceId: post.traceId })
+      log.info('scenario 3 not yet handled', { postId: post.id, traceId: post.traceId })
       return
     }
+
+    if (!draftPayload) {
+      postsRepo(db).updateStatus(post.id, 'no_match')
+      log.info('no draft produced', { postId: post.id, scenario: analysis.scenario, traceId: post.traceId })
+      return
+    }
+
     const idempKey = createHash('sha1')
-      .update(`${post.id}:${account.id}:${dr.draft.content}`)
+      .update(`${post.id}:${account.id}:${draftPayload.content}`)
       .digest('hex')
     draftsRepo(db).insert({
       postId: post.id,
       accountId: account.id,
-      content: dr.draft.content,
+      content: draftPayload.content,
       format: 'single',
-      citations: dr.draft.citations,
-      strategy: null,
+      citations: draftPayload.citations,
+      strategy,
       status: 'pending',
       idempotencyKey: idempKey,
-      promptVersion: dr.promptVersion,
+      promptVersion,
     })
     postsRepo(db).updateStatus(post.id, 'matched_article')
-    log.info('drafted', { postId: post.id, articleId: dr.articleId, traceId: post.traceId })
+    log.info('drafted', { postId: post.id, articleId, strategy, traceId: post.traceId })
   }
 
   const worker = new Worker<AiTaskPayload>(QUEUE_NAME, async (job) => {
