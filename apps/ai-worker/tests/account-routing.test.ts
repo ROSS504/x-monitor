@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vitest'
 import Database from 'better-sqlite3'
+import { Queue } from 'bullmq'
 import { migrate, accountsRepo, postsRepo, draftsRepo } from '@x-monitor/db'
-import { aiTasksQ, connection } from '@x-monitor/queue'
+import { connection, type AiTaskPayload } from '@x-monitor/queue'
 import { processBatch } from '../src/batch.js'
 import { searchKB } from '@x-monitor/kb-fixture'
 
@@ -9,7 +10,10 @@ afterAll(async () => { await connection.quit() })
 
 describe('processBatch routes drafts by strategy', () => {
   let db: Database.Database
+  let queueName: string
+  let q: Queue<AiTaskPayload>
   const businessHours = { startHour: 9, endHour: 23, tz: 'Asia/Shanghai' }
+
   beforeEach(() => {
     db = new Database(':memory:')
     migrate(db)
@@ -21,9 +25,12 @@ describe('processBatch routes drafts by strategy', () => {
       handle: 'RossYu_Personal', role: 'personal', cookiesPath: '/tmp/p',
       dailyLimit: 20, minIntervalMin: 30, businessHours, cooldownUntil: null,
     })
+    queueName = `test-ai-tasks-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    q = new Queue<AiTaskPayload>(queueName, { connection })
   })
   afterEach(async () => {
-    await aiTasksQ.obliterate({ force: true }).catch(() => {})
+    await q.obliterate({ force: true }).catch(() => {})
+    await q.close().catch(() => {})
     db.close()
   })
 
@@ -34,7 +41,7 @@ describe('processBatch routes drafts by strategy', () => {
       postedAt: Date.now(), lang: 'en', source: 'browser',
       scenarioHint: 'keyword:staking', status: 'discovered', traceId: 't100',
     })
-    await aiTasksQ.add('analyze', { postId, traceId: 't100' })
+    await q.add('analyze', { postId, traceId: 't100' })
     const fakeRun = vi.fn(async ({ prompt }: { prompt: string }) => {
       if (prompt.includes('Classify')) {
         return { text: '{"type":"question","scenario":"1","viewpoint":"asks about staking"}', durationMs: 50 }
@@ -45,7 +52,7 @@ describe('processBatch routes drafts by strategy', () => {
       }
     })
     const log = { info: () => {}, warn: () => {}, error: () => {} }
-    await processBatch(db, log, { runPrompt: fakeRun as any, searchKB })
+    await processBatch(db, log, { runPrompt: fakeRun as any, searchKB, queueName })
     const drafts = draftsRepo(db).listByStatus('pending')
     expect(drafts).toHaveLength(1)
     const officialId = accountsRepo(db).findByHandle('FinTax_Official')!.id

@@ -13,11 +13,13 @@ import { pickAccountForStrategy, type DraftStrategy } from '@x-monitor/rules'
 import type { SearchKBFn } from '@x-monitor/dify-client'
 
 const MAX_BATCH = 20
-const QUEUE_NAME = 'ai-tasks'
+const DEFAULT_QUEUE_NAME = 'ai-tasks'
 
 export interface ProcessBatchDeps {
   runPrompt: AnalyzeDeps['runPrompt'] & DraftDeps['runPrompt']
   searchKB: SearchKBFn
+  /** Override the BullMQ queue name (default 'ai-tasks'). Tests use unique names to avoid colliding with the production worker. */
+  queueName?: string
 }
 
 export async function processBatch(
@@ -25,6 +27,7 @@ export async function processBatch(
   log: Logger,
   deps: ProcessBatchDeps = { runPrompt, searchKB: getKB() },
 ): Promise<{ processed: number }> {
+  const queueName = deps.queueName ?? DEFAULT_QUEUE_NAME
   const accounts = accountsRepo(db).list()
   if (accounts.length === 0) throw new Error('No accounts seeded; run pnpm seed first')
 
@@ -105,7 +108,7 @@ export async function processBatch(
     log.info('drafted', { postId: post.id, articleId, strategy, accountId: targetAccount.id, traceId: post.traceId })
   }
 
-  const worker = new Worker<AiTaskPayload>(QUEUE_NAME, async (job) => {
+  const worker = new Worker<AiTaskPayload>(queueName, async (job) => {
     try {
       await handler(job)
       processed++

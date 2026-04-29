@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from 'vitest'
 import Database from 'better-sqlite3'
+import { Queue } from 'bullmq'
 import { migrate, accountsRepo, postsRepo, draftsRepo } from '@x-monitor/db'
-import { aiTasksQ, connection } from '@x-monitor/queue'
+import { connection, type AiTaskPayload } from '@x-monitor/queue'
 import { processBatch } from '../src/batch.js'
 import { searchKB } from '@x-monitor/kb-fixture'
 
 describe('processBatch (integration with redis + sqlite)', () => {
   let db: Database.Database
+  let queueName: string
+  let q: Queue<AiTaskPayload>
+
   beforeEach(() => {
     db = new Database(':memory:')
     migrate(db)
@@ -19,9 +23,12 @@ describe('processBatch (integration with redis + sqlite)', () => {
       businessHours: { startHour: 9, endHour: 23, tz: 'Asia/Shanghai' },
       cooldownUntil: null,
     })
+    queueName = `test-ai-tasks-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    q = new Queue<AiTaskPayload>(queueName, { connection })
   })
   afterEach(async () => {
-    await aiTasksQ.obliterate({ force: true }).catch(() => {})
+    await q.obliterate({ force: true }).catch(() => {})
+    await q.close().catch(() => {})
     db.close()
   })
   afterAll(async () => {
@@ -35,7 +42,7 @@ describe('processBatch (integration with redis + sqlite)', () => {
       postedAt: Date.now(), lang: 'en', source: 'browser',
       scenarioHint: 'keyword:staking', status: 'discovered', traceId: 'trace-1',
     })
-    await aiTasksQ.add('analyze', { postId, traceId: 'trace-1' })
+    await q.add('analyze', { postId, traceId: 'trace-1' })
 
     const fakeRun = vi.fn(async ({ prompt }: { prompt: string }) => {
       if (prompt.includes('Classify')) {
@@ -48,7 +55,7 @@ describe('processBatch (integration with redis + sqlite)', () => {
     })
 
     const log = { info: () => {}, warn: () => {}, error: () => {} }
-    const r = await processBatch(db, log, { runPrompt: fakeRun as any, searchKB })
+    const r = await processBatch(db, log, { runPrompt: fakeRun as any, searchKB, queueName })
     expect(r.processed).toBeGreaterThanOrEqual(1)
     const drafts = draftsRepo(db).listByStatus('pending')
     expect(drafts).toHaveLength(1)
@@ -62,7 +69,7 @@ describe('processBatch (integration with redis + sqlite)', () => {
       postedAt: Date.now(), lang: 'en', source: 'browser',
       scenarioHint: 'keyword:crypto', status: 'discovered', traceId: 'trace-2',
     })
-    await aiTasksQ.add('analyze', { postId, traceId: 'trace-2' })
+    await q.add('analyze', { postId, traceId: 'trace-2' })
 
     const fakeRun = vi.fn(async ({ prompt }: { prompt: string }) => {
       if (prompt.includes('Classify')) {
@@ -75,7 +82,7 @@ describe('processBatch (integration with redis + sqlite)', () => {
     })
 
     const log = { info: () => {}, warn: () => {}, error: () => {} }
-    const r = await processBatch(db, log, { runPrompt: fakeRun as any, searchKB })
+    const r = await processBatch(db, log, { runPrompt: fakeRun as any, searchKB, queueName })
     expect(r.processed).toBeGreaterThanOrEqual(1)
     const drafts = draftsRepo(db).listByStatus('pending')
     const synthDrafts = drafts.filter(d => d.strategy === 'kb-synthesis')
