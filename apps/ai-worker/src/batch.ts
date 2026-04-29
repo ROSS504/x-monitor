@@ -8,6 +8,7 @@ import { draftOne, type DraftDeps } from './draft.js'
 import { synthesizeOne } from './synthesize.js'
 import { createHash } from 'node:crypto'
 import type { Logger } from '@x-monitor/observability'
+import { pickAccountForStrategy, type DraftStrategy } from '@x-monitor/rules'
 
 const MAX_BATCH = 20
 const QUEUE_NAME = 'ai-tasks'
@@ -21,8 +22,8 @@ export async function processBatch(
   log: Logger,
   deps: ProcessBatchDeps = { runPrompt },
 ): Promise<{ processed: number }> {
-  const account = accountsRepo(db).findByHandle('FinTax_Official')
-  if (!account) throw new Error('FinTax_Official account not seeded')
+  const accounts = accountsRepo(db).list()
+  if (accounts.length === 0) throw new Error('No accounts seeded; run pnpm seed first')
 
   let processed = 0
 
@@ -78,12 +79,18 @@ export async function processBatch(
       return
     }
 
+    const targetAccount = pickAccountForStrategy(strategy as DraftStrategy, accounts)
+    if (!targetAccount) {
+      postsRepo(db).updateStatus(post.id, 'no_match')
+      log.warn('no account for strategy', { postId: post.id, strategy, traceId: post.traceId })
+      return
+    }
     const idempKey = createHash('sha1')
-      .update(`${post.id}:${account.id}:${draftPayload.content}`)
+      .update(`${post.id}:${targetAccount.id}:${draftPayload.content}`)
       .digest('hex')
     draftsRepo(db).insert({
       postId: post.id,
-      accountId: account.id,
+      accountId: targetAccount.id,
       content: draftPayload.content,
       format: 'single',
       citations: draftPayload.citations,
@@ -93,7 +100,7 @@ export async function processBatch(
       promptVersion,
     })
     postsRepo(db).updateStatus(post.id, 'matched_article')
-    log.info('drafted', { postId: post.id, articleId, strategy, traceId: post.traceId })
+    log.info('drafted', { postId: post.id, articleId, strategy, accountId: targetAccount.id, traceId: post.traceId })
   }
 
   const worker = new Worker<AiTaskPayload>(QUEUE_NAME, async (job) => {

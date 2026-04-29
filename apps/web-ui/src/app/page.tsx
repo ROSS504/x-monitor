@@ -1,11 +1,12 @@
 import { db } from '@/lib/server'
-import { draftsRepo, sentRepo } from '@x-monitor/db'
+import { draftsRepo, sentRepo, accountsRepo } from '@x-monitor/db'
 
 export const dynamic = 'force-dynamic'
 
 export default function HomePage() {
   const pendingCount = draftsRepo(db).listByStatus('pending').length
-  const sentToday = sentRepo(db).countTodayForAccount(1, Date.now())
+  const officialAccount = accountsRepo(db).findByHandle('FinTax_Official')
+  const sentToday = officialAccount ? sentRepo(db).countTodayForAccount(officialAccount.id, Date.now()) : 0
   return (
     <main>
       <h1>概览</h1>
