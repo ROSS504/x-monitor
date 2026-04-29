@@ -2,15 +2,21 @@ import { getDb, migrate } from '@x-monitor/db'
 import { createLogger, heartbeat } from '@x-monitor/observability'
 import { getNetStatus, connection } from '@x-monitor/queue'
 import { Worker } from 'bullmq'
-import { createDryRunClient } from '@x-monitor/x-client'
+import { createDryRunClient, createLiveClient, type XClient } from '@x-monitor/x-client'
 import { sendOne } from './post.js'
 
 const db = getDb(); migrate(db)
 const log = createLogger('poster')
 
-const xc = process.env.POSTER_DRY_RUN === '0'
-  ? (() => { throw new Error('live X client not implemented in M1') })()
-  : createDryRunClient()
+async function buildClient(): Promise<XClient> {
+  if (process.env.POSTER_DRY_RUN !== '0') return createDryRunClient()
+  const cookiesPath = process.env.COOKIES_FINTAX_OFFICIAL
+  if (!cookiesPath) throw new Error('COOKIES_FINTAX_OFFICIAL not set; refusing to start live poster')
+  log.info('starting live X client', { cookiesPath })
+  return createLiveClient({ cookiesPath, headless: process.env.POSTER_HEADLESS !== '0' })
+}
+
+const xc = await buildClient()
 
 new Worker<{ draftId: number; traceId: string }>(
   'send-tasks',

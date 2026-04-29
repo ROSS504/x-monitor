@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@x-monitor/core": "workspace:^"
+    "@x-monitor/core": "workspace:^",
+    "xactions": "file:/Users/nightyoung/xactions"
   }
 }
