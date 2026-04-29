@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { synthesizeOne } from '../src/synthesize.js'
+import { searchKB } from '@x-monitor/kb-fixture'
 
 describe('synthesizeOne', () => {
   it('returns no_kb_match when nothing matches', async () => {
     const fakeRun = vi.fn()
     const r = await synthesizeOne(
       { text: 'random pet food topic', authorHandle: 'a', viewpoint: 'pets' },
-      { runPrompt: fakeRun },
+      { runPrompt: fakeRun, searchKB },
     )
     expect(r.reason).toBe('no_kb_match')
     expect(r.draft).toBeNull()
@@ -20,7 +21,7 @@ describe('synthesizeOne', () => {
     }))
     const r = await synthesizeOne(
       { text: 'How are crypto staking rewards taxed?', authorHandle: 'a', viewpoint: 'asks about staking' },
-      { runPrompt: fakeRun },
+      { runPrompt: fakeRun, searchKB },
     )
     expect(r.reason).toBe('synthesized')
     expect(r.draft?.content).toContain('Synthesized')

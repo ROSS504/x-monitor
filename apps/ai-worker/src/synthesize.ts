@@ -1,4 +1,3 @@
-import { searchKB } from '@x-monitor/kb-fixture'
 import {
   buildSynthesizeReplyPrompt,
   parseSynthesizeReplyResponse,
@@ -6,8 +5,12 @@ import {
 } from '@x-monitor/prompts'
 import { isMatched } from '@x-monitor/rules'
 import type { runPrompt as RunPrompt } from '@x-monitor/claude-client'
+import type { SearchKBFn } from '@x-monitor/dify-client'
 
-export interface SynthesizeDeps { runPrompt: typeof RunPrompt }
+export interface SynthesizeDeps {
+  runPrompt: typeof RunPrompt
+  searchKB: SearchKBFn
+}
 export interface SynthesizeResult {
   draft: { content: string; citations: { chunkId: string; quote: string }[] } | null
   reason: 'synthesized' | 'no_kb_match'
@@ -19,7 +22,7 @@ export async function synthesizeOne(
   post: { text: string; authorHandle: string; viewpoint: string },
   deps: SynthesizeDeps,
 ): Promise<SynthesizeResult> {
-  const results = searchKB(post.text)
+  const results = await deps.searchKB(post.text)
   if (results.length === 0 || !isMatched(results[0].score)) {
     return {
       draft: null,

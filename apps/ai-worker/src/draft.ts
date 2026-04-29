@@ -1,4 +1,3 @@
-import { searchKB } from '@x-monitor/kb-fixture'
 import {
   buildDraftFromArticlePrompt,
   parseDraftFromArticleResponse,
@@ -6,8 +5,12 @@ import {
 } from '@x-monitor/prompts'
 import { isMatched } from '@x-monitor/rules'
 import type { runPrompt as RunPrompt } from '@x-monitor/claude-client'
+import type { SearchKBFn } from '@x-monitor/dify-client'
 
-export interface DraftDeps { runPrompt: typeof RunPrompt }
+export interface DraftDeps {
+  runPrompt: typeof RunPrompt
+  searchKB: SearchKBFn
+}
 export interface DraftResult {
   draft: { content: string; citations: { chunkId: string; quote: string }[] } | null
   reason: 'matched' | 'no_match'
@@ -20,7 +23,7 @@ export async function draftOne(
   post: { text: string; authorHandle: string },
   deps: DraftDeps,
 ): Promise<DraftResult> {
-  const results = searchKB(post.text)
+  const results = await deps.searchKB(post.text)
   if (results.length === 0 || !isMatched(results[0].score)) {
     return {
       draft: null,

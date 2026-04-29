@@ -45,6 +45,9 @@ importers:
       '@x-monitor/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@x-monitor/dify-client':
+        specifier: workspace:^
+        version: link:../../packages/dify-client
       '@x-monitor/kb-fixture':
         specifier: workspace:^
         version: link:../../packages/kb-fixture
@@ -297,6 +300,12 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.13
         version: 7.6.13
+
+  packages/dify-client:
+    dependencies:
+      '@x-monitor/core':
+        specifier: workspace:^
+        version: link:../core
 
   packages/kb-fixture:
     dependencies:

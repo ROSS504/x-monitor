@@ -3,6 +3,7 @@ import Database from 'better-sqlite3'
 import { migrate, accountsRepo, postsRepo, draftsRepo } from '@x-monitor/db'
 import { aiTasksQ, connection } from '@x-monitor/queue'
 import { processBatch } from '../src/batch.js'
+import { searchKB } from '@x-monitor/kb-fixture'
 
 afterAll(async () => { await connection.quit() })
 
@@ -44,7 +45,7 @@ describe('processBatch routes drafts by strategy', () => {
       }
     })
     const log = { info: () => {}, warn: () => {}, error: () => {} }
-    await processBatch(db, log, { runPrompt: fakeRun as any })
+    await processBatch(db, log, { runPrompt: fakeRun as any, searchKB })
     const drafts = draftsRepo(db).listByStatus('pending')
     expect(drafts).toHaveLength(1)
     const officialId = accountsRepo(db).findByHandle('FinTax_Official')!.id

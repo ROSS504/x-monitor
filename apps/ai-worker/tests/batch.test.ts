@@ -3,6 +3,7 @@ import Database from 'better-sqlite3'
 import { migrate, accountsRepo, postsRepo, draftsRepo } from '@x-monitor/db'
 import { aiTasksQ, connection } from '@x-monitor/queue'
 import { processBatch } from '../src/batch.js'
+import { searchKB } from '@x-monitor/kb-fixture'
 
 describe('processBatch (integration with redis + sqlite)', () => {
   let db: Database.Database
@@ -47,7 +48,7 @@ describe('processBatch (integration with redis + sqlite)', () => {
     })
 
     const log = { info: () => {}, warn: () => {}, error: () => {} }
-    const r = await processBatch(db, log, { runPrompt: fakeRun as any })
+    const r = await processBatch(db, log, { runPrompt: fakeRun as any, searchKB })
     expect(r.processed).toBeGreaterThanOrEqual(1)
     const drafts = draftsRepo(db).listByStatus('pending')
     expect(drafts).toHaveLength(1)
@@ -74,7 +75,7 @@ describe('processBatch (integration with redis + sqlite)', () => {
     })
 
     const log = { info: () => {}, warn: () => {}, error: () => {} }
-    const r = await processBatch(db, log, { runPrompt: fakeRun as any })
+    const r = await processBatch(db, log, { runPrompt: fakeRun as any, searchKB })
     expect(r.processed).toBeGreaterThanOrEqual(1)
     const drafts = draftsRepo(db).listByStatus('pending')
     const synthDrafts = drafts.filter(d => d.strategy === 'kb-synthesis')

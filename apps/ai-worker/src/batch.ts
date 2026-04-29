@@ -6,21 +6,24 @@ import { runPrompt } from '@x-monitor/claude-client'
 import { analyzeOne, type AnalyzeDeps } from './analyze.js'
 import { draftOne, type DraftDeps } from './draft.js'
 import { synthesizeOne } from './synthesize.js'
+import { getKB } from './kb.js'
 import { createHash } from 'node:crypto'
 import type { Logger } from '@x-monitor/observability'
 import { pickAccountForStrategy, type DraftStrategy } from '@x-monitor/rules'
+import type { SearchKBFn } from '@x-monitor/dify-client'
 
 const MAX_BATCH = 20
 const QUEUE_NAME = 'ai-tasks'
 
 export interface ProcessBatchDeps {
   runPrompt: AnalyzeDeps['runPrompt'] & DraftDeps['runPrompt']
+  searchKB: SearchKBFn
 }
 
 export async function processBatch(
   db: Database.Database,
   log: Logger,
-  deps: ProcessBatchDeps = { runPrompt },
+  deps: ProcessBatchDeps = { runPrompt, searchKB: getKB() },
 ): Promise<{ processed: number }> {
   const accounts = accountsRepo(db).list()
   if (accounts.length === 0) throw new Error('No accounts seeded; run pnpm seed first')
@@ -52,7 +55,7 @@ export async function processBatch(
     if (analysis.scenario === '1') {
       const dr = await draftOne(
         { text: post.text, authorHandle: post.authorHandle },
-        { runPrompt: deps.runPrompt },
+        { runPrompt: deps.runPrompt, searchKB: deps.searchKB },
       )
       draftPayload = dr.draft
       strategy = 'article-match'
@@ -61,7 +64,7 @@ export async function processBatch(
     } else if (analysis.scenario === '2') {
       const sr = await synthesizeOne(
         { text: post.text, authorHandle: post.authorHandle, viewpoint: analysis.viewpoint },
-        { runPrompt: deps.runPrompt },
+        { runPrompt: deps.runPrompt, searchKB: deps.searchKB },
       )
       draftPayload = sr.draft
       strategy = 'kb-synthesis'
@@ -70,7 +73,7 @@ export async function processBatch(
       // scenario === '3' — customer engagement: synthesize a friendly engagement reply from KB
       const sr = await synthesizeOne(
         { text: post.text, authorHandle: post.authorHandle, viewpoint: analysis.viewpoint },
-        { runPrompt: deps.runPrompt },
+        { runPrompt: deps.runPrompt, searchKB: deps.searchKB },
       )
       draftPayload = sr.draft
       strategy = 'customer-engagement'

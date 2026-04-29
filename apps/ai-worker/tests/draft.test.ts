@@ -1,12 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { draftOne } from '../src/draft.js'
+import { searchKB } from '@x-monitor/kb-fixture'
 
 describe('draftOne', () => {
   it('returns no_match when KB has no relevant article', async () => {
     const fakeRun = vi.fn()
     const r = await draftOne(
       { text: 'completely unrelated topic about pet food', authorHandle: 'a' },
-      { runPrompt: fakeRun },
+      { runPrompt: fakeRun, searchKB },
     )
     expect(r.reason).toBe('no_match')
     expect(r.draft).toBeNull()
@@ -20,7 +21,7 @@ describe('draftOne', () => {
     }))
     const r = await draftOne(
       { text: 'How are staking rewards taxed?', authorHandle: 'a' },
-      { runPrompt: fakeRun },
+      { runPrompt: fakeRun, searchKB },
     )
     expect(r.reason).toBe('matched')
     expect(r.articleId).toBe('art-staking')
