@@ -7,5 +7,7 @@ dist
 .DS_Store
 data/*.db
 data/*.db-journal
+**/data/*.db
+**/data/*.db-*
 .pm2
 .superpowers
