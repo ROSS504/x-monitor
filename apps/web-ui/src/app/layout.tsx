@@ -8,7 +8,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body
         style={{
           fontFamily: 'system-ui, sans-serif',
-          maxWidth: 960,
+          maxWidth: 1200,
           margin: '20px auto',
           padding: '0 12px',
         }}
@@ -23,6 +23,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           }}
         >
           <a href="/">概览</a>
+          <a href="/posts">帖子库</a>
           <a href="/pending">待审核</a>
           <a href="/accounts">账号</a>
           <a href="/sent">已发送</a>
