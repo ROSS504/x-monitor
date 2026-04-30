@@ -75,7 +75,32 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
       const url = `https://x.com/i/web/status/${replyToTweetId}`
       const r = await engagementManager.replyToTweet(page, url, content)
       if (!r.success) throw new Error(`replyToTweet failed for ${replyToTweetId}`)
-      // xactions reply doesn't surface the new reply tweet id; synthesize a unique-enough id
+      // After replying, look up the most recent NON-PINNED tweet on the account's profile.
+      // That tweet IS the one we just posted (we control timing). This gives a real tweet_id
+      // that can be chained for thread replies.
+      try {
+        await (page as any).goto(`https://x.com/${accountHandle}/with_replies`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
+        await new Promise(r => setTimeout(r, 2500))
+        const newId = (await (page as any).evaluate(`
+          (function() {
+            var arts = document.querySelectorAll('article[data-testid="tweet"]');
+            for (var i = 0; i < arts.length; i++) {
+              var social = arts[i].querySelector('[data-testid="socialContext"]');
+              if (social && /pin|置顶/i.test(social.textContent || '')) continue;
+              var anchors = arts[i].querySelectorAll('a[href*="/status/"]');
+              for (var j = 0; j < anchors.length; j++) {
+                var h = anchors[j].getAttribute('href') || '';
+                var m = h.match(/^\\/[^/]+\\/status\\/(\\d+)$/);
+                if (m) return m[1];
+              }
+            }
+            return null;
+          })()
+        `)) as string | null
+        if (newId) return { tweetId: newId }
+      } catch {
+        // fall through to synthetic id
+      }
       return { tweetId: `live-${accountHandle}-${Date.now()}` }
     },
 
