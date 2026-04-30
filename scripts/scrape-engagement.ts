@@ -33,7 +33,8 @@ async function scrapeTweetEngagement(page: any, tweetUrl: string): Promise<{
       }
       function parseNumBefore(s, keyword) {
         if (!s) return 0;
-        var re = new RegExp('([\\\\d,.]+)\\\\s*([KkMmBb]?)\\\\s+' + keyword, 'i');
+        // match: "78 次观看", "202 次查看", "69 views", "1.2K views"
+        var re = new RegExp('([\\\\d,.]+)\\\\s*([KkMmBb]?)\\\\s*(?:次)?\\\\s*' + keyword, 'i');
         var m = s.match(re);
         if (!m) return 0;
         var v = parseFloat(m[1].replace(/,/g, ''));
@@ -51,12 +52,16 @@ async function scrapeTweetEngagement(page: any, tweetUrl: string): Promise<{
       var retweets = parseLeadingNum(aria('[data-testid="retweet"]') || aria('[data-testid="unretweet"]'));
       var replies = parseLeadingNum(aria('[data-testid="reply"]'));
       var bookmarks = parseLeadingNum(aria('[data-testid="bookmark"]') || aria('[data-testid="removeBookmark"]'));
-      // Views: scan all DIV/SPAN aria-labels matching "N views" or "N likes, N views"
+      // Views: scan all aria-labels for "N views" / "N 次观看" / "N 次查看"
       var views = 0;
-      var divs = Array.prototype.slice.call(root.querySelectorAll('div[aria-label], span[aria-label], a[aria-label]'));
-      for (var i = 0; i < divs.length; i++) {
-        var l = divs[i].getAttribute('aria-label') || '';
-        var v = parseNumBefore(l, 'views?');
+      var all = Array.prototype.slice.call(root.querySelectorAll('[aria-label]'));
+      for (var i = 0; i < all.length; i++) {
+        var l = all[i].getAttribute('aria-label') || '';
+        var v = Math.max(
+          parseNumBefore(l, 'views?'),
+          parseNumBefore(l, '观看'),
+          parseNumBefore(l, '查看')
+        );
         if (v > views) views = v;
       }
       return { likes: likes, retweets: retweets, replies: replies, bookmarks: bookmarks, views: views };
