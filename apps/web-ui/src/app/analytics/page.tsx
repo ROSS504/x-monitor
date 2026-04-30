@@ -48,7 +48,7 @@ export default function AnalyticsPage({ searchParams }: { searchParams: { hint?:
     WHERE p.scenario_hint = ?
   `).get(hint) as { posts: number; likes: number; retweets: number; replies: number; views: number }
 
-  const days = db.prepare(`
+  const rawDays = db.prepare(`
     WITH latest AS (
       SELECT post_id, likes, retweets, replies, views,
         ROW_NUMBER() OVER (PARTITION BY post_id ORDER BY scraped_at DESC) rn
@@ -66,6 +66,29 @@ export default function AnalyticsPage({ searchParams }: { searchParams: { hint?:
     WHERE p.scenario_hint = ?
     GROUP BY d ORDER BY d ASC
   `).all(hint) as DayBucket[]
+
+  // Fill in zero-bars for missing days between min..max (use day-string arithmetic)
+  const days: DayBucket[] = rawDays.length === 0 ? [] : (() => {
+    function nextDay(s: string): string {
+      const [y, m, d] = s.split('-').map(Number)
+      // Use UTC arithmetic on a local-noon anchor to avoid DST/tz drift
+      const t = Date.UTC(y, m - 1, d) + 86400_000
+      const dt = new Date(t)
+      return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`
+    }
+    const byDay = new Map(rawDays.map(d => [d.d, d]))
+    const out: DayBucket[] = []
+    let cur = rawDays[0].d
+    const last = rawDays[rawDays.length - 1].d
+    let safety = 0
+    while (cur <= last && safety < 400) {
+      out.push(byDay.get(cur) ?? { d: cur, posts: 0, likes: 0, retweets: 0, replies: 0, views: 0 })
+      if (cur === last) break
+      cur = nextDay(cur)
+      safety++
+    }
+    return out
+  })()
 
   const topByViews = db.prepare(`
     WITH latest AS (
