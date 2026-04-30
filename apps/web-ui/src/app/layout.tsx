@@ -24,6 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           <a href="/">概览</a>
           <a href="/posts">帖子库</a>
+          <a href="/analytics">数据图表</a>
           <a href="/pending">待审核</a>
           <a href="/accounts">账号</a>
           <a href="/sent">已发送</a>
