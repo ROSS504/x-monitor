@@ -1,7 +1,7 @@
 import type { XClient, XSearchResult, DmMessage } from './client.js'
 
 export interface DryRunXClient extends XClient {
-  posted: { replyToTweetId: string; content: string; account: string; tweetId: string }[]
+  posted: { replyToTweetId: string; content: string; account: string; tweetId: string; kind?: 'reply' | 'quote'; quotedSourceUrl?: string }[]
   seedSearch: (results: XSearchResult[]) => void
   seedDMs: (dms: DmMessage[]) => void
   readonly dmInbox: DmMessage[]
@@ -20,7 +20,20 @@ export function createDryRunClient(seeded: XSearchResult[] = []): DryRunXClient 
     async search(_q, _since) { return searchSeed },
     async postReply(replyToTweetId, content, account) {
       const tweetId = `dry-${++counter}`
-      posted.push({ replyToTweetId, content, account, tweetId })
+      posted.push({ replyToTweetId, content, account, tweetId, kind: 'reply' })
+      searchSeed.push({
+        tweetId,
+        authorHandle: account,
+        text: content,
+        postedAt: Date.now(),
+        lang: 'en',
+        metrics: { likes: 0, retweets: 0, replies: 0, bookmarks: 0 },
+      })
+      return { tweetId }
+    },
+    async quoteTweet(sourceUrl, content, account) {
+      const tweetId = `dry-${++counter}`
+      posted.push({ replyToTweetId: '', quotedSourceUrl: sourceUrl, content, account, tweetId, kind: 'quote' })
       searchSeed.push({
         tweetId,
         authorHandle: account,

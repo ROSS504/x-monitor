@@ -50,9 +50,9 @@ describe('sendOne', () => {
     expect(sentRepo(db).findByDraftId(1)).not.toBeNull()
   })
 
-  it('thread format posts each part as a chained reply', async () => {
+  it('external-queue thread quotes source as first part, then chains replies', async () => {
     const postId = postsRepo(db).insert({
-      tweetId: 'src-thread', authorHandle: 'b', text: 'topic', postedAt: 2000, lang: 'en',
+      tweetId: 'src-thread', authorHandle: 'someone', text: 'topic', postedAt: 2000, lang: 'en',
       source: 'browser', scenarioHint: null, status: 'matched_article', traceId: 'tr2',
     })
     const draftId = draftsRepo(db).insert({
@@ -64,11 +64,15 @@ describe('sendOne', () => {
     const r = await sendOne(db, xc, draftId)
     expect(r.partsSent).toBe(3)
     expect(xc.posted).toHaveLength(3)
-    // First part replies to source; subsequent parts chain off the previous reply
-    expect(xc.posted[0].replyToTweetId).toBe('src-thread')
+    // First part is a quote-tweet of the source URL (NOT a reply)
+    expect(xc.posted[0].kind).toBe('quote')
+    expect(xc.posted[0].quotedSourceUrl).toBe('https://x.com/someone/status/src-thread')
+    expect(xc.posted[0].replyToTweetId).toBe('')
+    // Follow-up parts reply to the previous part to form a nested thread
+    expect(xc.posted[1].kind).toBe('reply')
     expect(xc.posted[1].replyToTweetId).toBe(xc.posted[0].tweetId)
+    expect(xc.posted[2].kind).toBe('reply')
     expect(xc.posted[2].replyToTweetId).toBe(xc.posted[1].tweetId)
-    // sent row references first part's tweetId
     const sent = sentRepo(db).findByDraftId(draftId)
     expect(sent?.tweetId).toBe(xc.posted[0].tweetId)
     expect(draftsRepo(db).findById(draftId)?.status).toBe('sent')

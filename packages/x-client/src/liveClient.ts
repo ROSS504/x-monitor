@@ -51,6 +51,69 @@ function dmMessageId(name: string, text: string, time: string): string {
 }
 
 /**
+ * Click the primary submit button. X uses several data-testids; also fall back
+ * to aria-label / text matching ("Reply" / "Post" / "Tweet" / "发布" / "回复").
+ */
+async function clickSubmit(page: any): Promise<boolean> {
+  const candidates = [
+    '[data-testid="tweetButtonInline"]',
+    '[data-testid="tweetButton"]',
+    '[data-testid="tweetButtonInlineV2"]',
+  ]
+  for (const sel of candidates) {
+    try {
+      const el = await page.$(sel)
+      if (!el) continue
+      const disabled = await page.evaluate(`(function(){var e=document.querySelector(${JSON.stringify(sel)}); return e ? (e.getAttribute('aria-disabled')==='true' || e.disabled) : true;})()`)
+      if (disabled) continue
+      await el.click()
+      return true
+    } catch {}
+  }
+  return await page.evaluate(`
+    (function() {
+      var nodes = document.querySelectorAll('button, [role="button"]');
+      for (var i = 0; i < nodes.length; i++) {
+        var l = (nodes[i].getAttribute('aria-label') || '').toLowerCase();
+        var t = (nodes[i].textContent || '').toLowerCase();
+        if (/^(reply|tweet|post|发布|发帖|回复)$/.test(l) || /^(reply|tweet|post|发布|发帖|回复)$/.test(t)) {
+          if (nodes[i].getAttribute('aria-disabled') === 'true') continue;
+          nodes[i].click();
+          return true;
+        }
+      }
+      return false;
+    })()
+  `)
+}
+
+/**
+ * Compose a NEW tweet that quote-embeds the source URL. Appears in the user's
+ * main profile timeline (Posts tab), unlike replies which only appear under
+ * /with_replies. Returns true on apparent success.
+ */
+async function quoteOnPage(page: any, sourceUrl: string, text: string): Promise<boolean> {
+  // /compose/post opens the standalone composer with the textarea immediately focused
+  await page.goto('https://x.com/compose/post', { waitUntil: 'domcontentloaded', timeout: 25_000 })
+  await new Promise(r => setTimeout(r, 1500))
+  const composer = '[data-testid="tweetTextarea_0"]'
+  await page.waitForSelector(composer, { timeout: 15_000 })
+  await page.click(composer)
+  await new Promise(r => setTimeout(r, 300))
+  // Type body text first, then a blank line, then the source URL last so X
+  // unfurls it as a quote-card at the bottom.
+  await page.keyboard.type(text, { delay: 12 })
+  await page.keyboard.type('\n\n', { delay: 30 })
+  await page.keyboard.type(sourceUrl, { delay: 12 })
+  // Wait for X to fetch the quote-card preview
+  await new Promise(r => setTimeout(r, 2500))
+  const ok = await clickSubmit(page)
+  if (!ok) return false
+  await new Promise(r => setTimeout(r, 4000))
+  return true
+}
+
+/**
  * Robust reply: navigates to tweet URL, clicks reply, types text, finds the
  * primary submit button (X uses different data-testids depending on the
  * composer surface and locale). Returns true on apparent success.
@@ -66,49 +129,38 @@ async function replyOnPage(page: any, tweetUrl: string, replyText: string): Prom
   // Type the text. Use insertText via Keyboard API for better unicode handling.
   await page.keyboard.type(replyText, { delay: 15 })
   await new Promise(r => setTimeout(r, 700))
-  // Try multiple selectors / strategies for the submit button.
-  // Priority: tweetButtonInline (modal & inline composer), tweetButton (other surfaces),
-  // tweetButtonInlineV2 (newer), then aria-label fallback.
-  const candidates = [
-    '[data-testid="tweetButtonInline"]',
-    '[data-testid="tweetButton"]',
-    '[data-testid="tweetButtonInlineV2"]',
-  ]
-  let clicked = false
-  for (const sel of candidates) {
-    try {
-      const el = await page.$(sel)
-      if (el) {
-        const disabled = await page.evaluate(`(function(){var e=document.querySelector(${JSON.stringify(sel)}); return e ? (e.getAttribute('aria-disabled')==='true' || e.disabled) : true;})()`)
-        if (disabled) continue
-        await el.click()
-        clicked = true
-        break
-      }
-    } catch { /* try next */ }
-  }
-  if (!clicked) {
-    // Aria-label fallback (handles Chinese / English wording)
-    clicked = await page.evaluate(`
-      (function() {
-        var nodes = document.querySelectorAll('button, [role="button"]');
-        for (var i = 0; i < nodes.length; i++) {
-          var l = (nodes[i].getAttribute('aria-label') || '').toLowerCase();
-          var t = (nodes[i].textContent || '').toLowerCase();
-          if (/^(reply|tweet|post|发布|发帖|回复)$/.test(l) || /^(reply|tweet|post|发布|发帖|回复)$/.test(t)) {
-            if (nodes[i].getAttribute('aria-disabled') === 'true') continue;
-            (nodes[i] as any).click();
-            return true;
-          }
-        }
-        return false;
-      })()
-    `)
-  }
-  if (!clicked) return false
-  // Wait for the reply to actually submit (composer should clear / URL change / our reply appears)
+  if (!(await clickSubmit(page))) return false
   await new Promise(r => setTimeout(r, 4000))
   return true
+}
+
+async function findOurNewestTweetId(page: any, accountHandle: string): Promise<string | null> {
+  await page.goto(`https://x.com/${accountHandle}/with_replies`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
+  await new Promise(r => setTimeout(r, 2500))
+  return (await page.evaluate(`
+    (function() {
+      var handle = ${JSON.stringify(accountHandle.toLowerCase())};
+      var arts = document.querySelectorAll('article[data-testid="tweet"]');
+      var best = null;
+      var bestTime = 0;
+      for (var i = 0; i < arts.length; i++) {
+        var social = arts[i].querySelector('[data-testid="socialContext"]');
+        if (social && /pin|置顶/i.test(social.textContent || '')) continue;
+        var anchors = arts[i].querySelectorAll('a[href*="/status/"]');
+        var perma = '';
+        for (var j = 0; j < anchors.length; j++) {
+          var h = anchors[j].getAttribute('href') || '';
+          var m = h.match(/^\\/([^/]+)\\/status\\/(\\d+)$/);
+          if (m && m[1].toLowerCase() === handle) { perma = m[2]; break; }
+        }
+        if (!perma) continue;
+        var t = arts[i].querySelector('time');
+        var dt = t ? Date.parse(t.getAttribute('datetime') || '') : 0;
+        if (dt > bestTime) { best = perma; bestTime = dt; }
+      }
+      return best;
+    })()
+  `)) as string | null
 }
 
 export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXClient> {
@@ -136,42 +188,20 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
       const url = `https://x.com/i/web/status/${replyToTweetId}`
       const ok = await replyOnPage(page, url, content)
       if (!ok) throw new Error(`replyToTweet failed for ${replyToTweetId}`)
-      // After replying, look up the most recent NON-PINNED tweet on the account's profile.
-      // That tweet IS the one we just posted (we control timing). This gives a real tweet_id
-      // that can be chained for thread replies.
       try {
-        await (page as any).goto(`https://x.com/${accountHandle}/with_replies`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
-        await new Promise(r => setTimeout(r, 2500))
-        // Find the newest article whose permalink belongs to our handle (case-insensitive),
-        // skipping any pinned tweet. Ignore "context" articles that show the parent of a reply.
-        const newId = (await (page as any).evaluate(`
-          (function() {
-            var handle = ${JSON.stringify(accountHandle.toLowerCase())};
-            var arts = document.querySelectorAll('article[data-testid="tweet"]');
-            var best = null;
-            var bestTime = 0;
-            for (var i = 0; i < arts.length; i++) {
-              var social = arts[i].querySelector('[data-testid="socialContext"]');
-              if (social && /pin|置顶/i.test(social.textContent || '')) continue;
-              var anchors = arts[i].querySelectorAll('a[href*="/status/"]');
-              var perma = '';
-              for (var j = 0; j < anchors.length; j++) {
-                var h = anchors[j].getAttribute('href') || '';
-                var m = h.match(/^\\/([^/]+)\\/status\\/(\\d+)$/);
-                if (m && m[1].toLowerCase() === handle) { perma = m[2]; break; }
-              }
-              if (!perma) continue;
-              var t = arts[i].querySelector('time');
-              var dt = t ? Date.parse(t.getAttribute('datetime') || '') : 0;
-              if (dt > bestTime) { best = perma; bestTime = dt; }
-            }
-            return best;
-          })()
-        `)) as string | null
+        const newId = await findOurNewestTweetId(page, accountHandle)
         if (newId) return { tweetId: newId }
-      } catch {
-        // fall through to synthetic id
-      }
+      } catch {}
+      return { tweetId: `live-${accountHandle}-${Date.now()}` }
+    },
+
+    async quoteTweet(sourceUrl: string, content: string, accountHandle: string): Promise<{ tweetId: string }> {
+      const ok = await quoteOnPage(page, sourceUrl, content)
+      if (!ok) throw new Error(`quoteTweet failed for ${sourceUrl}`)
+      try {
+        const newId = await findOurNewestTweetId(page, accountHandle)
+        if (newId) return { tweetId: newId }
+      } catch {}
       return { tweetId: `live-${accountHandle}-${Date.now()}` }
     },
 

@@ -50,10 +50,24 @@ export async function sendOne(
   const isThread = d.format === 'thread'
   const parts = isThread ? splitThread(d.content) : [d.content]
 
+  // External-queue drafts are quote-retweets of the source — first part embeds
+  // the source URL as a quote (appears in the account's main timeline), follow-up
+  // parts reply to the previous part to form a nested thread.
+  // Other strategies stay on the legacy reply-only path.
+  const useQuoteFirst = d.strategy === 'external-queue'
+  const sourceUrl = `https://x.com/${post.authorHandle}/status/${post.tweetId}`
+
   let firstSentTweetId: string | null = null
-  let lastTweetId = post.tweetId  // start by replying to the source post
+  let lastTweetId: string | null = null
   for (let i = 0; i < parts.length; i++) {
-    const r = await xc.postReply(lastTweetId, parts[i], acct.handle)
+    let r: { tweetId: string }
+    if (i === 0 && useQuoteFirst) {
+      r = await xc.quoteTweet(sourceUrl, parts[i], acct.handle)
+    } else if (i === 0) {
+      r = await xc.postReply(post.tweetId, parts[i], acct.handle)
+    } else {
+      r = await xc.postReply(lastTweetId!, parts[i], acct.handle)
+    }
     if (!firstSentTweetId) firstSentTweetId = r.tweetId
     lastTweetId = r.tweetId
     if (i < parts.length - 1) await sleep(partDelayMs())
