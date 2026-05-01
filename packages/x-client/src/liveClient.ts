@@ -50,6 +50,67 @@ function dmMessageId(name: string, text: string, time: string): string {
   return createHash('sha1').update(`${name}|${time}|${text}`).digest('hex').slice(0, 32)
 }
 
+/**
+ * Robust reply: navigates to tweet URL, clicks reply, types text, finds the
+ * primary submit button (X uses different data-testids depending on the
+ * composer surface and locale). Returns true on apparent success.
+ */
+async function replyOnPage(page: any, tweetUrl: string, replyText: string): Promise<boolean> {
+  await page.goto(tweetUrl, { waitUntil: 'domcontentloaded', timeout: 25_000 })
+  await new Promise(r => setTimeout(r, 2000))
+  // Focus reply textarea — testid is stable across locales
+  const replyInput = '[data-testid="tweetTextarea_0"]'
+  await page.waitForSelector(replyInput, { timeout: 15_000 })
+  await page.click(replyInput)
+  await new Promise(r => setTimeout(r, 400))
+  // Type the text. Use insertText via Keyboard API for better unicode handling.
+  await page.keyboard.type(replyText, { delay: 15 })
+  await new Promise(r => setTimeout(r, 700))
+  // Try multiple selectors / strategies for the submit button.
+  // Priority: tweetButtonInline (modal & inline composer), tweetButton (other surfaces),
+  // tweetButtonInlineV2 (newer), then aria-label fallback.
+  const candidates = [
+    '[data-testid="tweetButtonInline"]',
+    '[data-testid="tweetButton"]',
+    '[data-testid="tweetButtonInlineV2"]',
+  ]
+  let clicked = false
+  for (const sel of candidates) {
+    try {
+      const el = await page.$(sel)
+      if (el) {
+        const disabled = await page.evaluate(`(function(){var e=document.querySelector(${JSON.stringify(sel)}); return e ? (e.getAttribute('aria-disabled')==='true' || e.disabled) : true;})()`)
+        if (disabled) continue
+        await el.click()
+        clicked = true
+        break
+      }
+    } catch { /* try next */ }
+  }
+  if (!clicked) {
+    // Aria-label fallback (handles Chinese / English wording)
+    clicked = await page.evaluate(`
+      (function() {
+        var nodes = document.querySelectorAll('button, [role="button"]');
+        for (var i = 0; i < nodes.length; i++) {
+          var l = (nodes[i].getAttribute('aria-label') || '').toLowerCase();
+          var t = (nodes[i].textContent || '').toLowerCase();
+          if (/^(reply|tweet|post|发布|发帖|回复)$/.test(l) || /^(reply|tweet|post|发布|发帖|回复)$/.test(t)) {
+            if (nodes[i].getAttribute('aria-disabled') === 'true') continue;
+            (nodes[i] as any).click();
+            return true;
+          }
+        }
+        return false;
+      })()
+    `)
+  }
+  if (!clicked) return false
+  // Wait for the reply to actually submit (composer should clear / URL change / our reply appears)
+  await new Promise(r => setTimeout(r, 4000))
+  return true
+}
+
 export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXClient> {
   const authToken = readAuthToken(opts.cookiesPath)
   const browser: XActionsBrowser = await createBrowser({ headless: opts.headless ?? true })
@@ -73,28 +134,38 @@ export async function createLiveClient(opts: LiveClientOptions): Promise<LiveXCl
 
     async postReply(replyToTweetId: string, content: string, accountHandle: string): Promise<{ tweetId: string }> {
       const url = `https://x.com/i/web/status/${replyToTweetId}`
-      const r = await engagementManager.replyToTweet(page, url, content)
-      if (!r.success) throw new Error(`replyToTweet failed for ${replyToTweetId}`)
+      const ok = await replyOnPage(page, url, content)
+      if (!ok) throw new Error(`replyToTweet failed for ${replyToTweetId}`)
       // After replying, look up the most recent NON-PINNED tweet on the account's profile.
       // That tweet IS the one we just posted (we control timing). This gives a real tweet_id
       // that can be chained for thread replies.
       try {
         await (page as any).goto(`https://x.com/${accountHandle}/with_replies`, { waitUntil: 'domcontentloaded', timeout: 20_000 })
         await new Promise(r => setTimeout(r, 2500))
+        // Find the newest article whose permalink belongs to our handle (case-insensitive),
+        // skipping any pinned tweet. Ignore "context" articles that show the parent of a reply.
         const newId = (await (page as any).evaluate(`
           (function() {
+            var handle = ${JSON.stringify(accountHandle.toLowerCase())};
             var arts = document.querySelectorAll('article[data-testid="tweet"]');
+            var best = null;
+            var bestTime = 0;
             for (var i = 0; i < arts.length; i++) {
               var social = arts[i].querySelector('[data-testid="socialContext"]');
               if (social && /pin|置顶/i.test(social.textContent || '')) continue;
               var anchors = arts[i].querySelectorAll('a[href*="/status/"]');
+              var perma = '';
               for (var j = 0; j < anchors.length; j++) {
                 var h = anchors[j].getAttribute('href') || '';
-                var m = h.match(/^\\/[^/]+\\/status\\/(\\d+)$/);
-                if (m) return m[1];
+                var m = h.match(/^\\/([^/]+)\\/status\\/(\\d+)$/);
+                if (m && m[1].toLowerCase() === handle) { perma = m[2]; break; }
               }
+              if (!perma) continue;
+              var t = arts[i].querySelector('time');
+              var dt = t ? Date.parse(t.getAttribute('datetime') || '') : 0;
+              if (dt > bestTime) { best = perma; bestTime = dt; }
             }
-            return null;
+            return best;
           })()
         `)) as string | null
         if (newId) return { tweetId: newId }
