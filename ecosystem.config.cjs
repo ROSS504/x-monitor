@@ -3,8 +3,10 @@ const REPO = '/Users/nightyoung/IdeaProjects/x-monitor'
 const SHARED_ENV = {
   SQLITE_PATH: `${REPO}/data/x-monitor.db`,
   REDIS_URL: 'redis://localhost:6379',
-  POSTER_DRY_RUN: '1',
-  X_CLIENT_MODE: 'dry',
+  POSTER_DRY_RUN: '0',
+  X_CLIENT_MODE: 'live',
+  POSTER_HEADLESS: '1',
+  POSTER_PART_DELAY_MS: '5000',
 }
 
 const COMMON = {
