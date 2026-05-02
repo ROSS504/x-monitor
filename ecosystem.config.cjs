@@ -118,6 +118,24 @@ module.exports = {
       ...COMMON,
     },
     {
+      // Daily customer scrape: runs at 00:00 Asia/Shanghai every night.
+      // PM2 starts the script, it runs to completion, exits, then PM2 holds
+      // until next cron tick. autorestart=false prevents tight respawn on exit.
+      // NOTE: We invoke tsx via its Node ESM entry directly. The shell wrapper
+      // at node_modules/.bin/tsx is a bash script and PM2's default Node-mode
+      // execution can't run it (treats shebang as JS).
+      name: 'daily-customer-scrape',
+      script: 'node_modules/tsx/dist/cli.mjs',
+      args: 'scripts/scrape-customers-daily.ts',
+      cron_restart: '0 0 * * *',
+      autorestart: false,
+      max_memory_restart: '600M',
+      env: SHARED_ENV,
+      cwd: REPO,
+      out_file: '.pm2/logs/daily-customer-scrape.out.log',
+      error_file: '.pm2/logs/daily-customer-scrape.err.log',
+    },
+    {
       name: 'fresh-kb-indexer',
       script: 'apps/fresh-kb-indexer/dist/index.js',
       max_memory_restart: '200M',
