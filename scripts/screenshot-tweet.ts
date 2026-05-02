@@ -10,10 +10,12 @@ const page = await createPage(browser) as any
 await page.setCookie(...cookies.map((c: any) => ({
   name: c.name, value: c.value, domain: c.domain ?? '.x.com', path: c.path ?? '/', secure: true, httpOnly: c.httpOnly ?? false,
 })))
-await page.setViewport({ width: 800, height: 1200 })
+await page.setViewport({ width: 1280, height: 900, deviceScaleFactor: 2 })
 await page.goto(url, { waitUntil: 'networkidle2', timeout: 30_000 })
 await new Promise(r => setTimeout(r, 3500))
-await page.screenshot({ path: out, fullPage: false })
+// Crop to the primary column to skip sidebars
+const clip = await page.evaluate(`(function(){var c=document.querySelector('[data-testid="primaryColumn"]');if(!c) return null;var r=c.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:Math.min(r.height, 1500)};})()`) as any
+await page.screenshot({ path: out, ...(clip ? { clip } : { fullPage: false }) })
 console.log(`saved ${out}`)
 await browser.close()
 process.exit(0)
